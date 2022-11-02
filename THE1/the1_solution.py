@@ -42,7 +42,7 @@ def find_rotated_pos(x: float, y: float, o: tuple[float, float], degree: float =
     t_y = y - o[1]
     r_x = t_x * cos_val - t_y * sin_val
     r_y = t_x * sin_val + t_y * cos_val
-    return (r_x + o[0], r_y + o[1], )
+    return r_x + o[0], r_y + o[1],
 
 
 def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
@@ -52,17 +52,34 @@ def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            # print(f"original point -> {x}, {y}, new point -> {new_point[0]}, {new_point[1]}")
             if new_point[0] < 0 or new_point[0] > shape[0] - 1 or new_point[1] < 0 or new_point[1] > shape[1] - 1:
                 for z in range(0, shape[2]):
                     ret_val[x][y][z] = 0
             else:
-                for z in range(0, shape[2]):
-                    ret_val[x][y][z] = numpy.uint(
-                        (int(img_func[math.floor(new_point[0])][math.floor(new_point[1])][z]) +
-                         int(img_func[math.ceil(new_point[0])][math.floor(new_point[1])][z]) +
-                         int(img_func[math.floor(new_point[0])][math.ceil(new_point[1])][z]) +
-                         int(img_func[math.ceil(new_point[0])][math.ceil(new_point[1])][z])) / 4)
+                x_floor = math.floor(new_point[0])
+                y_floor = math.floor(new_point[1])
+                x_ceil = math.ceil(new_point[0])
+                y_ceil = math.ceil(new_point[1])
+                if x_floor == x_ceil and y_floor == y_ceil:
+                    for z in range(0, shape[2]):
+                        ret_val[x][y][z] = img_func[x_floor][y_floor][z]
+                elif x_floor == x_ceil:
+                    for z in range(0, shape[2]):
+                        ret_val[x][y][z] = numpy.uint(
+                            float(img_func[x_floor][y_floor][z]) * (y_ceil - new_point[1]) +
+                            float(img_func[x_floor][y_ceil][z]) * (new_point[1] - y_floor))
+                elif y_floor == y_ceil:
+                    for z in range(0, shape[2]):
+                        ret_val[x][y][z] = numpy.uint(
+                            float(img_func[x_floor][y_floor][z]) * (x_ceil - new_point[0]) +
+                            float(img_func[x_ceil][y_floor][z]) * (new_point[0] - x_floor))
+                else:
+                    for z in range(0, shape[2]):
+                        ret_val[x][y][z] = numpy.uint(
+                            float(img_func[x_floor][y_floor][z]) * (x_ceil - new_point[0]) * (y_ceil - new_point[1]) +
+                            float(img_func[x_floor][y_ceil][z]) * (x_ceil - new_point[0]) * (new_point[1] - y_floor) +
+                            float(img_func[x_ceil][y_floor][z]) * (new_point[0] - x_floor) * (y_ceil - new_point[1]) +
+                            float(img_func[x_ceil][y_ceil][z]) * (new_point[0] - x_floor) * (new_point[1] - y_floor))
     return ret_val
 
 
@@ -73,9 +90,35 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            for z in range(0, shape[2]):
-                pass
-    pass
+            if new_point[0] < 1 or new_point[0] > shape[0] - 2 or new_point[1] < 1 or new_point[1] > shape[1] - 2:
+                for z in range(0, shape[2]):
+                    ret_val[x][y][z] = 0
+            else:
+                x_vals = [math.ceil(new_point[0]) + 1, math.ceil(new_point[0]), math.floor(new_point[0]),
+                          math.floor(new_point[0]) - 1]
+                y_vals = [math.ceil(new_point[1]) + 1, math.ceil(new_point[1]), math.floor(new_point[1]),
+                          math.floor(new_point[1]) - 1]
+
+                for z in range(0, shape[2]):
+                    ret_val[x][y][z] = numpy.uint(
+                        float(img_func[x_vals[0]][y_vals[0]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[1]][y_vals[0]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[2]][y_vals[0]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[3]][y_vals[0]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[0]][y_vals[1]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[1]][y_vals[1]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[2]][y_vals[1]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[3]][y_vals[1]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[0]][y_vals[2]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[1]][y_vals[2]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[2]][y_vals[2]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[3]][y_vals[2]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[0]][y_vals[3]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[1]][y_vals[3]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[2]][y_vals[3]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
+                        float(img_func[x_vals[3]][y_vals[3]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0)
+
+    return ret_val
 
 
 def rotate_image(img_func: np.ndarray, degree: float = 0, interpolation_type: str = "linear") -> np.ndarray:
@@ -85,22 +128,21 @@ def rotate_image(img_func: np.ndarray, degree: float = 0, interpolation_type: st
         return rotate_image_cubic(img_func, degree)
 
 
-"""def histogram_equalization(img_func: np.array):
-    return img_hist_eq"""
+def histogram_equalization(img_func: np.array):
+    return img_hist_eq
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
     # PART1
-    img = read_image(INPUT_PATH + "a1.png")
+    """img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a1_45_linear.png")
+    write_image(output, OUTPUT_PATH + "a1_45_linear.png")"""
 
-    """
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a1_45_cubic.png")
-
+    """
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "linear")
     write_image(output, OUTPUT_PATH + "a1_90_linear.png")
