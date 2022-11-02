@@ -1,5 +1,7 @@
 
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 INPUT_PATH = "./THE1_Images/"
 OUTPUT_PATH = "./Outputs/"
@@ -12,7 +14,7 @@ def write_image(img, output_path, rgb = True):
 def extract_save_histogram(img, path):
 
 
-def rotate_image(img,  degree = 0, interpolation_type = "linear"):
+def rotate_image(img,  degree:float = 0, interpolation_type:str = "linear"):
     #interpolation type: "linear" or "cubic"
     #degree: 45 or 90
 
