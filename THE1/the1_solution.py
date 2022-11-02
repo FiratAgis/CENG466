@@ -3,6 +3,7 @@ import os
 import numpy
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image
 from PIL import Image
 import math
 
@@ -16,11 +17,18 @@ def read_image(img_path: str, rgb: bool = True) -> np.ndarray:
 
 
 def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> None:
-    if rgb:
-        img_data = Image.fromarray(img_func, mode="RGB")
-    else:
+    """    if rgb:
         img_data = Image.fromarray(img_func)
-    img_data.save(output_path)
+    else:
+        img_data = Image.fromarray(img_func)"""
+
+    shape = img_func.shape
+    output_file = np.zeros(shape)
+    for x in range(0, shape[0]):
+        for y in range(0, shape[1]):
+            for z in range(0, shape[2]):
+                output_file[x][y][z] = float(img_func[x][y][z]) / 255
+    matplotlib.image.imsave(output_path, output_file)
 
 
 def extract_save_histogram(img_func: np.ndarray, path: str):
@@ -34,7 +42,7 @@ def find_rotated_pos(x: float, y: float, o: tuple[float, float], degree: float =
     t_y = y - o[1]
     r_x = t_x * cos_val - t_y * sin_val
     r_y = t_x * sin_val + t_y * cos_val
-    return r_x + o[0], r_y + o[1],
+    return (r_x + o[0], r_y + o[1], )
 
 
 def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
@@ -44,7 +52,7 @@ def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            print(f"original point -> {x}, {y}, new point -> {new_point[0]}, {new_point[1]}")
+            # print(f"original point -> {x}, {y}, new point -> {new_point[0]}, {new_point[1]}")
             if new_point[0] < 0 or new_point[0] > shape[0] - 1 or new_point[1] < 0 or new_point[1] > shape[1] - 1:
                 for z in range(0, shape[2]):
                     ret_val[x][y][z] = 0
