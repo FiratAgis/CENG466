@@ -2,14 +2,17 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import imageio
+from PIL import Image
 
 INPUT_PATH = "./THE1_Images/"
 OUTPUT_PATH = "./Outputs/"
 
-def read_image(img_path, rgb = True):
-    return img
+def read_image(img_path: str, rgb = True):
+    img_data = Image.open(img_path)
+    return np.asarray(img_data)
 
-def write_image(img, output_path, rgb = True):
+"""def write_image(img, output_path, rgb = True):
 
 def extract_save_histogram(img, path):
 
@@ -22,14 +25,16 @@ def rotate_image(img,  degree:float = 0, interpolation_type:str = "linear"):
 
 def histogram_equalization(img):
 
-    return img_hist_eq
+    return img_hist_eq"""
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
     #PART1
     img = read_image(INPUT_PATH + "a1.png")
-    output = rotate_image(img, 45, "linear")
+    print(img)
+
+    """output = rotate_image(img, 45, "linear")
     write_image(output, OUTPUT_PATH + "a1_45_linear.png")
 
     img = read_image(INPUT_PATH + "a1.png")
@@ -63,7 +68,7 @@ if __name__ == '__main__':
     # Define the following function
     # equalized = adaptive_histogram_equalization(img)
     # extract_save_histogram(equalized, OUTPUT_PATH + "adaptive_equalized_histogram.png")
-    # write_image(output, OUTPUT_PATH + "adaptive_enhanced_image.png")
+    # write_image(output, OUTPUT_PATH + "adaptive_enhanced_image.png")"""
 
 
 
