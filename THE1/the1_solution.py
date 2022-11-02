@@ -12,27 +12,51 @@ OUTPUT_PATH = "./Outputs/"
 
 
 def read_image(img_path: str, rgb: bool = True) -> np.ndarray:
-    img_data = Image.open(img_path)
+    img_data: Image
+    if rgb:
+        img_data = Image.open(img_path)
+    else:
+        img_data = Image.open(img_path).convert('L')
     return np.asarray(img_data)
 
 
 def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> None:
-    """    if rgb:
-        img_data = Image.fromarray(img_func)
-    else:
-        img_data = Image.fromarray(img_func)"""
-
     shape = img_func.shape
+    if len(shape) == 2:
+        rgb = False
     output_file = np.zeros(shape)
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
-            for z in range(0, shape[2]):
-                output_file[x][y][z] = float(img_func[x][y][z]) / 255
-    matplotlib.image.imsave(output_path, output_file)
+            if rgb:
+                for z in range(0, shape[2]):
+                    output_file[x][y][z] = float(img_func[x][y][z]) / 255
+            else:
+                output_file[x][y] = float(img_func[x][y]) / 255
+    matplotlib.image.imsave(output_path, output_file, cmap="gray")
+
+
+def extract_histogram(img_func: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    for x in img_func:
+        for y in x:
+            ret_val[int(y)] = ret_val[int(y)] + 1
+    return ret_val
+
+
+def create_cum_histogram(histogram: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    ret_val[0] = histogram[0]
+    for x in range(1, 256):
+        ret_val[x] = ret_val[x - 1] + histogram[x]
+    return ret_val
 
 
 def extract_save_histogram(img_func: np.ndarray, path: str):
-    pass
+    histogram = extract_histogram(img_func)
+    bins = range(256)
+    plt.stairs(histogram, range(257))
+    plt.savefig(path)
+    plt.clf()
 
 
 def find_rotated_pos(x: float, y: float, o: tuple[float, float], degree: float = 0) -> tuple[float, float]:
@@ -129,20 +153,31 @@ def rotate_image(img_func: np.ndarray, degree: float = 0, interpolation_type: st
 
 
 def histogram_equalization(img_func: np.array):
+    shape = img_func.shape
+    img_hist_eq = np.zeros(shape, dtype=np.uint)
+    histogram = extract_histogram(img_func)
+    cum = create_cum_histogram(histogram)
+    size = float(shape[0] * shape[1])
+    coefficient = 255.0 / size
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            img_hist_eq[x][y] = math.floor(coefficient * cum[img_func[x][y]])
     return img_hist_eq
+
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
     # PART1
-    """img = read_image(INPUT_PATH + "a1.png")
+
+    img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a1_45_linear.png")"""
+    write_image(output, OUTPUT_PATH + "a1_45_linear.png")
 
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a1_45_cubic.png")
-    """
+    
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "linear")
     write_image(output, OUTPUT_PATH + "a1_90_linear.png")
@@ -164,7 +199,7 @@ if __name__ == '__main__':
     extract_save_histogram(img, OUTPUT_PATH + "original_histogram.png")
     equalized = histogram_equalization(img)
     extract_save_histogram(equalized, OUTPUT_PATH + "equalized_histogram.png")
-    write_image(output, OUTPUT_PATH + "enhanced_image.png")
+    write_image(equalized, OUTPUT_PATH + "enhanced_image.png")
 
     # BONUS
     # Define the following function
