@@ -53,7 +53,6 @@ def create_cum_histogram(histogram: np.ndarray) -> np.ndarray:
 
 def extract_save_histogram(img_func: np.ndarray, path: str):
     histogram = extract_histogram(img_func)
-    bins = range(256)
     plt.stairs(histogram, range(257))
     plt.savefig(path)
     plt.clf()
@@ -111,10 +110,12 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     shape = img_func.shape
     originPoint = (float(shape[0]) / 2.0, float(shape[1]) / 2.0,)
     ret_val = np.zeros(shape)
+    m_left = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [-3, 3, -2, -1], [2, -2, 1, 1]])
+    m_right = np.array([[1, 0, -3, 2], [0, 0, 3, -2], [0, 1, -2, 1], [0, 0, -1, 1]])
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            if new_point[0] < 1 or new_point[0] > shape[0] - 2 or new_point[1] < 1 or new_point[1] > shape[1] - 2:
+            if new_point[0] < 0 or new_point[0] > shape[0] - 1 or new_point[1] < 0 or new_point[1] > shape[1] - 1:
                 for z in range(0, shape[2]):
                     ret_val[x][y][z] = 0
             else:
@@ -124,24 +125,33 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
                           math.floor(new_point[1]) - 1]
 
                 for z in range(0, shape[2]):
-                    ret_val[x][y][z] = numpy.uint(
-                        float(img_func[x_vals[0]][y_vals[0]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[1]][y_vals[0]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[2]][y_vals[0]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[3]][y_vals[0]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[2] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[0]][y_vals[1]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[1]][y_vals[1]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[2]][y_vals[1]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[3]][y_vals[1]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[3] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[0]][y_vals[2]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[1]][y_vals[2]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[2]][y_vals[2]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[3]][y_vals[2]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[0] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[0]][y_vals[3]][z]) * math.fabs(x_vals[2] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[1]][y_vals[3]][z]) * math.fabs(x_vals[3] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[2]][y_vals[3]][z]) * math.fabs(x_vals[0] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0 +
-                        float(img_func[x_vals[3]][y_vals[3]][z]) * math.fabs(x_vals[1] - new_point[0]) * math.fabs(y_vals[1] - new_point[1]) / 16.0)
-
+                    neighbourhood = np.zeros((4, 4,))
+                    for x_val_i in range(len(x_vals)):
+                        for y_val_i in range(len(y_vals)):
+                            x_val = x_vals[x_val_i]
+                            y_val = y_vals[y_val_i]
+                            if x_val < 0 or x_val > shape[0] - 1 or y_val < 0 or y_val > shape[1] - 1:
+                                neighbourhood[x_val_i][y_val_i] = 0.0
+                            else:
+                                neighbourhood[x_val_i][y_val_i] = img_func[x_val][y_val][z]
+                    f = np.array([[neighbourhood[1][1], neighbourhood[1][2],
+                                   (neighbourhood[1][2] - neighbourhood[1][0]) / 2.0,
+                                   (neighbourhood[1][3] - neighbourhood[1][1]) / 2.0],
+                                  [neighbourhood[2][1], neighbourhood[2][2],
+                                   (neighbourhood[2][2] - neighbourhood[2][0]) / 2.0,
+                                   (neighbourhood[2][3] - neighbourhood[2][1]) / 2.0],
+                                  [(neighbourhood[2][1] - neighbourhood[0][1]) / 2,
+                                   (neighbourhood[2][2] - neighbourhood[0][2]) / 2,
+                                   (neighbourhood[2][2] - neighbourhood[0][0]) / 2,
+                                   (neighbourhood[2][3] - neighbourhood[0][1]) / 2],
+                                  [(neighbourhood[3][1] - neighbourhood[1][1]) / 2,
+                                   (neighbourhood[3][2] - neighbourhood[1][2]) / 2,
+                                   (neighbourhood[3][2] - neighbourhood[1][0]) / 2,
+                                   (neighbourhood[3][3] - neighbourhood[1][1]) / 2]])
+                    a = np.matmul(np.matmul(m_left, f), m_right)
+                    for x_i in range(4):
+                        for y_i in range(4):
+                            ret_val[x][y][z] += a[x_i][y_i] * ((x - math.floor(x)) ** x_i) * ((y - math.ceil(y)) ** y_i)
     return ret_val
 
 
@@ -177,7 +187,7 @@ if __name__ == '__main__':
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a1_45_cubic.png")
-    
+
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "linear")
     write_image(output, OUTPUT_PATH + "a1_90_linear.png")
@@ -194,8 +204,8 @@ if __name__ == '__main__':
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a2_45_cubic.png")
 
-    #PART2
-    img = read_image(INPUT_PATH + "b1.png", rgb = False)
+    # PART2
+    img = read_image(INPUT_PATH + "b1.png", rgb=False)
     extract_save_histogram(img, OUTPUT_PATH + "original_histogram.png")
     equalized = histogram_equalization(img)
     extract_save_histogram(equalized, OUTPUT_PATH + "equalized_histogram.png")
