@@ -112,46 +112,63 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     ret_val = np.zeros(shape)
     m_left = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [-3, 3, -2, -1], [2, -2, 1, 1]])
     m_right = np.array([[1, 0, -3, 2], [0, 0, 3, -2], [0, 1, -2, 1], [0, 0, -1, 1]])
+    f_x = np.zeros(shape)
+    f_y = np.zeros(shape)
+    f_xy = np.zeros(shape)
+    for x in range(0, shape[0]):
+        if x == 0:
+            f_x[x] = img_func[x + 1] / 2.0
+        else:
+            if x == shape[0] - 1:
+                f_x[x] = (- img_func[x - 1]) / 2.0
+            else:
+                f_x[x] = (img_func[x + 1] - img_func[x - 1]) / 2.0
+        for y in range(0, shape[1]):
+            if y == 0:
+                f_y[x][y] = img_func[x][y + 1] / 2.0
+            else:
+                if y == shape[1] - 1:
+                    f_y[x][y] = (- img_func[x][y - 1]) / 2.0
+                else:
+                    f_y[x][y] = (img_func[x][y + 1] - img_func[x][y - 1]) / 2.0
+            if x != 0 and y != 0:
+                if x != shape[0] - 1 and y != shape[1] - 1:
+                    f_xy[x][y] = (img_func[x + 1][y + 1] - img_func[x - 1][y - 1]) / 2.0
+                else:
+                    f_xy[x][y] = (- img_func[x - 1][y - 1]) / 2.0
+            else:
+                if x != shape[0] - 1 and y != shape[1] - 1:
+                    f_xy[x][y] = img_func[x + 1][y + 1] / 2.0
+
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            if new_point[0] < 0 or new_point[0] > shape[0] - 1 or new_point[1] < 0 or new_point[1] > shape[1] - 1:
-                for z in range(0, shape[2]):
-                    ret_val[x][y][z] = 0
-            else:
-                x_vals = [math.ceil(new_point[0]) + 1, math.ceil(new_point[0]), math.floor(new_point[0]),
-                          math.floor(new_point[0]) - 1]
-                y_vals = [math.ceil(new_point[1]) + 1, math.ceil(new_point[1]), math.floor(new_point[1]),
-                          math.floor(new_point[1]) - 1]
+            if 0 <= new_point[0] <= shape[0] - 1 and 0 <= new_point[1] <= shape[1] - 1:
+                x_floor = math.floor(new_point[0])
+                y_floor = math.floor(new_point[1])
+                x_ceil = math.ceil(new_point[0])
+                y_ceil = math.ceil(new_point[1])
+                x_dist = new_point[0] - x_floor
+                y_dist = new_point[1] - y_floor
+                m_left_new = np.matmul(np.array([1, x_dist, x_dist ** 2, x_dist ** 3]), m_left)
+                m_right_new = np.matmul(m_right, np.array([1, y_dist, y_dist ** 2, y_dist ** 3]).transpose())
 
                 for z in range(0, shape[2]):
-                    neighbourhood = np.zeros((4, 4,))
-                    for x_val_i in range(len(x_vals)):
-                        for y_val_i in range(len(y_vals)):
-                            x_val = x_vals[x_val_i]
-                            y_val = y_vals[y_val_i]
-                            if x_val < 0 or x_val > shape[0] - 1 or y_val < 0 or y_val > shape[1] - 1:
-                                neighbourhood[x_val_i][y_val_i] = 0.0
-                            else:
-                                neighbourhood[x_val_i][y_val_i] = img_func[x_val][y_val][z]
-                    f = np.array([[neighbourhood[1][1], neighbourhood[1][2],
-                                   (neighbourhood[1][2] - neighbourhood[1][0]) / 2.0,
-                                   (neighbourhood[1][3] - neighbourhood[1][1]) / 2.0],
-                                  [neighbourhood[2][1], neighbourhood[2][2],
-                                   (neighbourhood[2][2] - neighbourhood[2][0]) / 2.0,
-                                   (neighbourhood[2][3] - neighbourhood[2][1]) / 2.0],
-                                  [(neighbourhood[2][1] - neighbourhood[0][1]) / 2,
-                                   (neighbourhood[2][2] - neighbourhood[0][2]) / 2,
-                                   (neighbourhood[2][2] - neighbourhood[0][0]) / 2,
-                                   (neighbourhood[2][3] - neighbourhood[0][1]) / 2],
-                                  [(neighbourhood[3][1] - neighbourhood[1][1]) / 2,
-                                   (neighbourhood[3][2] - neighbourhood[1][2]) / 2,
-                                   (neighbourhood[3][2] - neighbourhood[1][0]) / 2,
-                                   (neighbourhood[3][3] - neighbourhood[1][1]) / 2]])
-                    a = np.matmul(np.matmul(m_left, f), m_right)
-                    for x_i in range(4):
-                        for y_i in range(4):
-                            ret_val[x][y][z] += a[x_i][y_i] * ((x - math.floor(x)) ** x_i) * ((y - math.ceil(y)) ** y_i)
+                    ret_val[x][y][z] = np.matmul(
+                        np.matmul(m_left_new,
+                                  np.array([[float(img_func[x_floor][y_floor][z]), float(img_func[x_floor][y_ceil][z]),
+                                             f_y[x_floor][y_floor][z], f_y[x_floor][y_ceil][z]],
+                                            [float(img_func[x_ceil][y_floor][z]), float(img_func[x_ceil][y_ceil][z]),
+                                             f_y[x_ceil][y_floor][z], f_y[x_ceil][y_ceil][z]],
+                                            [float(f_x[x_floor][y_floor][z]), float(f_x[x_floor][y_ceil][z]),
+                                             f_xy[x_floor][y_floor][z], f_xy[x_floor][y_ceil][z]],
+                                            [float(f_x[x_ceil][y_floor][z]), float(f_x[x_ceil][y_ceil][z]),
+                                             f_xy[x_ceil][y_floor][z], f_xy[x_ceil][y_ceil][z]]])), m_right_new).max()
+
+    if ret_val.min() < 0.0:
+        ret_val -= ret_val.min()
+    if ret_val.max() > 255.0:
+        ret_val *= (255.0 / ret_val.max())
     return ret_val
 
 
@@ -180,25 +197,25 @@ if __name__ == '__main__':
         os.makedirs(OUTPUT_PATH)
     # PART1
 
-    img = read_image(INPUT_PATH + "a1.png")
+    """img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a1_45_linear.png")
+    write_image(output, OUTPUT_PATH + "a1_45_linear.png")"""
 
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a1_45_cubic.png")
 
-    img = read_image(INPUT_PATH + "a1.png")
+    """img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "linear")
-    write_image(output, OUTPUT_PATH + "a1_90_linear.png")
+    write_image(output, OUTPUT_PATH + "a1_90_linear.png")"""
 
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "cubic")
     write_image(output, OUTPUT_PATH + "a1_90_cubic.png")
 
-    img = read_image(INPUT_PATH + "a2.png")
+    """img = read_image(INPUT_PATH + "a2.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a2_45_linear.png")
+    write_image(output, OUTPUT_PATH + "a2_45_linear.png")"""
 
     img = read_image(INPUT_PATH + "a2.png")
     output = rotate_image(img, 45, "cubic")
