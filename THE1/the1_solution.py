@@ -160,10 +160,12 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
                                             [float(f_x[x_ceil][y_floor][z]), float(f_x[x_ceil][y_ceil][z]),
                                              f_xy[x_ceil][y_floor][z], f_xy[x_ceil][y_ceil][z]]])), m_right_new).max()
 
-    if ret_val.min() < 0.0:
-        ret_val -= ret_val.min()
-    if ret_val.max() > 255.0:
-        ret_val *= (255.0 / ret_val.max())
+    min_val = ret_val.min()
+    if min_val < 0.0:
+        ret_val -= min_val
+    max_val = ret_val.max()
+    if max_val > 255.0:
+        ret_val *= (255.0 / max_val)
     return ret_val
 
 
