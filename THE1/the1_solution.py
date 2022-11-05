@@ -114,32 +114,27 @@ def rotate_image_cubic(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     m_right = np.array([[1, 0, -3, 2], [0, 0, 3, -2], [0, 1, -2, 1], [0, 0, -1, 1]])
     f_x = np.zeros(shape)
     f_y = np.zeros(shape)
-    f_xy = np.zeros(shape)
-    for x in range(0, shape[0]):
-        if x == 0:
-            f_x[x] = img_func[x + 1] / 2.0
-        else:
-            if x == shape[0] - 1:
-                f_x[x] = (- img_func[x - 1]) / 2.0
-            else:
-                f_x[x] = (img_func[x + 1] - img_func[x - 1]) / 2.0
-        for y in range(0, shape[1]):
-            if y == 0:
-                f_y[x][y] = img_func[x][y + 1] / 2.0
-            else:
-                if y == shape[1] - 1:
-                    f_y[x][y] = (- img_func[x][y - 1]) / 2.0
-                else:
-                    f_y[x][y] = (img_func[x][y + 1] - img_func[x][y - 1]) / 2.0
-            if x != 0 and y != 0:
-                if x != shape[0] - 1 and y != shape[1] - 1:
-                    f_xy[x][y] = (img_func[x + 1][y + 1] - img_func[x - 1][y - 1]) / 2.0
-                else:
-                    f_xy[x][y] = (- img_func[x - 1][y - 1]) / 2.0
-            else:
-                if x != shape[0] - 1 and y != shape[1] - 1:
-                    f_xy[x][y] = img_func[x + 1][y + 1] / 2.0
 
+    f_x[0] = img_func[1] / 2.0
+    f_y[0][0] = img_func[0][1] / 2.0
+    f_y[0][shape[1] - 1] = (- img_func[0][shape[1] - 2]) / 2.0
+    for y in range(1, shape[1] - 1):
+        f_y[0][y] = (img_func[0][y + 1] - img_func[0][y - 1]) / 2.0
+
+    f_x[shape[0] - 1] = (- img_func[shape[0] - 1 - 1]) / 2.0
+    f_y[shape[0] - 1][0] = img_func[shape[0] - 1][1] / 2.0
+    f_y[shape[0] - 1][shape[1] - 1] = (- img_func[shape[0] - 1][shape[1] - 2]) / 2.0
+    for y in range(1, shape[1] - 1):
+        f_y[shape[0] - 1][y] = (img_func[shape[0] - 1][y + 1] - img_func[shape[0] - 1][y - 1]) / 2.0
+    for x in range(1, shape[0] - 1):
+        f_x[x] = (img_func[x + 1] - img_func[x - 1]) / 2.0
+
+        f_y[x][0] = img_func[x][1] / 2.0
+        f_y[x][shape[1] - 1] = (- img_func[x][shape[1] - 2]) / 2.0
+        for y in range(1, shape[1] - 1):
+            f_y[x][y] = (img_func[x][y + 1] - img_func[x][y - 1]) / 2.0
+
+    f_xy = (f_x + f_y) / 2.0
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
             new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
