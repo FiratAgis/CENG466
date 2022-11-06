@@ -74,35 +74,31 @@ def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
     ret_val = np.zeros(shape)
     for x in range(0, shape[0]):
         for y in range(0, shape[1]):
-            new_point = find_rotated_pos(float(x), float(y), originPoint, degree)
-            if new_point[0] < 0 or new_point[0] > shape[0] - 1 or new_point[1] < 0 or new_point[1] > shape[1] - 1:
-                for z in range(0, shape[2]):
-                    ret_val[x][y][z] = 0
-            else:
-                x_floor = math.floor(new_point[0])
-                y_floor = math.floor(new_point[1])
-                x_ceil = math.ceil(new_point[0])
-                y_ceil = math.ceil(new_point[1])
+            x_coor, y_coor = find_rotated_pos(float(x), float(y), originPoint, degree)
+            if 0 <= x_coor <= shape[0] - 1 and 0 <= y_coor <= shape[1] - 1:
+                x_floor = math.floor(x_coor)
+                y_floor = math.floor(y_coor)
+                x_ceil = math.ceil(x_coor)
+                y_ceil = math.ceil(y_coor)
                 if x_floor == x_ceil and y_floor == y_ceil:
-                    for z in range(0, shape[2]):
-                        ret_val[x][y][z] = img_func[x_floor][y_floor][z]
+                    ret_val[x][y] = img_func[x_floor][y_floor]
+
                 elif x_floor == x_ceil:
-                    for z in range(0, shape[2]):
-                        ret_val[x][y][z] = numpy.uint(
-                            float(img_func[x_floor][y_floor][z]) * (y_ceil - new_point[1]) +
-                            float(img_func[x_floor][y_ceil][z]) * (new_point[1] - y_floor))
+                    ret_val[x][y] = numpy.uint(
+                        img_func[x_floor][y_floor] * (y_ceil - y_coor) +
+                        img_func[x_floor][y_ceil] * (y_coor - y_floor))
+
                 elif y_floor == y_ceil:
-                    for z in range(0, shape[2]):
-                        ret_val[x][y][z] = numpy.uint(
-                            float(img_func[x_floor][y_floor][z]) * (x_ceil - new_point[0]) +
-                            float(img_func[x_ceil][y_floor][z]) * (new_point[0] - x_floor))
+                    ret_val[x][y] = numpy.uint(
+                        img_func[x_floor][y_floor] * (x_ceil - x_coor) +
+                        img_func[x_ceil][y_floor] * (x_coor - x_floor))
                 else:
-                    for z in range(0, shape[2]):
-                        ret_val[x][y][z] = numpy.uint(
-                            float(img_func[x_floor][y_floor][z]) * (x_ceil - new_point[0]) * (y_ceil - new_point[1]) +
-                            float(img_func[x_floor][y_ceil][z]) * (x_ceil - new_point[0]) * (new_point[1] - y_floor) +
-                            float(img_func[x_ceil][y_floor][z]) * (new_point[0] - x_floor) * (y_ceil - new_point[1]) +
-                            float(img_func[x_ceil][y_ceil][z]) * (new_point[0] - x_floor) * (new_point[1] - y_floor))
+                    ret_val[x][y] = numpy.uint(
+                            img_func[x_floor][y_floor] * (x_ceil - x_coor) * (y_ceil - y_coor) +
+                            img_func[x_floor][y_ceil] * (x_ceil - x_coor) * (y_coor - y_floor) +
+                            img_func[x_ceil][y_floor] * (x_coor - x_floor) * (y_ceil - y_coor) +
+                            img_func[x_ceil][y_ceil] * (x_coor - x_floor) * (y_coor - y_floor))
+
     return ret_val
 
 
@@ -194,25 +190,25 @@ if __name__ == '__main__':
         os.makedirs(OUTPUT_PATH)
     # PART1
 
-    """img = read_image(INPUT_PATH + "a1.png")
+    img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a1_45_linear.png")"""
+    write_image(output, OUTPUT_PATH + "a1_45_linear.png")
 
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "cubic")
     write_image(output, OUTPUT_PATH + "a1_45_cubic.png")
 
-    """img = read_image(INPUT_PATH + "a1.png")
+    img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "linear")
-    write_image(output, OUTPUT_PATH + "a1_90_linear.png")"""
+    write_image(output, OUTPUT_PATH + "a1_90_linear.png")
 
     img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 90, "cubic")
     write_image(output, OUTPUT_PATH + "a1_90_cubic.png")
 
-    """img = read_image(INPUT_PATH + "a2.png")
+    img = read_image(INPUT_PATH + "a2.png")
     output = rotate_image(img, 45, "linear")
-    write_image(output, OUTPUT_PATH + "a2_45_linear.png")"""
+    write_image(output, OUTPUT_PATH + "a2_45_linear.png")
 
     img = read_image(INPUT_PATH + "a2.png")
     output = rotate_image(img, 45, "cubic")
