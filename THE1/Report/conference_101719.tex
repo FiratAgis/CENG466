@@ -104,14 +104,52 @@ Because this order of operations requiring multiple matrix multiplications for e
 
 
 \subsection{Histogram Extraction}
+For histogram extraction we needed the information of distribution of intensity values. For this we basically created an array that will hold the information of how many pixels image has from each intensity value. Our array had 256 zero elements that we are going to increase with each intensity value that corresponds to that elements index. Our function returned an \emph{numpy} array with information of how many pixels the image has from each intensity value. In the homework text the image given was written as gray scale image but the code template did not take the b1.png as gray scale. TA's did change the image with grayscale one but instead we rgb parameter to false to get the corresponding gray scale image.
 
+	After having the intensity values and their distribution we basically fed this information to \emph{stairs} function from \emph{matplotlib} library. This function takes two lists and plots a continuous histogram graph.
+
+    \begin{figure}[]
+    \centering
+    \includegraphics[width=0.5\textwidth]{resources/original_histogram.png}
+    \caption{Original histogram plot of the image b1.png}
+    \label{fig:plot1}
+    \end{figure}
 
 \subsection{Histogram Equalization}
+After having the information intensity value distributions, rest was easy. We first computed the cumulative histogram of the image by adding the sum of previous intensity values from the original histogram to each element. Cumulative histogram is different than the original histogram in an important aspect, it gives us a non-decreasing function so we can calculate the equalized intensity values from it. We do this by calculating a coefficient from the intensity range and image size with the bottom formula and multiplying it with corresponding values from the cumulative histogram for each value in the original histogram.
 
+\begin{align}
+	s_{k} = round[\frac{L-1}{N\cdot M}\cdot h_{c}\cdot (r_{k})]\label{Histogram equalization coefficient formula}
+\end{align}
+Where,
+\begin{align}
+	h_{c}\cdot (r_{k}) = \sum {h(r_{i})}\label{Histogram equalization coefficient formula}
+\end{align}
+
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.5\textwidth]{resources/equalized_histogram.png}
+    \caption{Equalized histogram plot of the image b1.png}
+    \label{fig:plot2}
+\end{figure}
+
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.5\textwidth]{resources/equalized_histogram_comp.png}
+    \caption{Comparison of equalized histogram and original histogram on the same plot b1.png}
+    \label{fig:plot3}
+\end{figure}
 
 
 \subsection{Adaptive Histogram Equalization}
+Adaptive histogram equalization differs from the histogram equalization by the context they are taking account. Histogram equalization takes the whole image and compute the distributions from all pixels but adaptive histogram equalization works more locally, takes some part of the image into account and only affects that part of the image. This gives us more detail piece wise but to make the final image more visually appealing we need to apply more filtering techniques or change the equalization technique fundamentally. Our image has visible difference lines between the parts that our equalization technique  uses as local areas.
 
+\begin{figure}[]
+    \centering
+    \includegraphics[width=0.5\textwidth]{resources/adaptive_equalized_histogram.png}
+    \caption{Adaptively equalized histogram plot of the image b1.png}
+    \label{fig:plot4}
+\end{figure}
 
 \section{Dependencies}
 We used following libraries for the described reasons.

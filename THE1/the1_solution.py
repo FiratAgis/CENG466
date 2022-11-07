@@ -182,13 +182,35 @@ def histogram_equalization(img_func: np.array):
             img_hist_eq[x][y] = math.floor(coefficient * cum[img_func[x][y]])
     return img_hist_eq
 
+def adaptive_histogram_equalization(img_func: np.array):
+    shape = img_func.shape
+    region_num = 2
+    partition_width = math.floor(shape[0]/region_num)
+    partition_height = math.floor(shape[1]/region_num)
+    img_adaptive_hist_eq = np.zeros(shape, dtype=np.uint)
+    partition_area = np.zeros((partition_width, partition_height), dtype=np.uint)
+    for y in range(0,region_num):
+        for x in range(0,region_num):
+            print("Y & X: ", y, ", ", x)
+            for j in range(0, partition_height):
+                for i in range(0, partition_width):
+                    partition_area[i][j] = img_func[(x*partition_width)+i][(y*partition_height) + j]
+
+            partition_area = histogram_equalization(partition_area)
+
+            for j in range(0, partition_height):
+                for i in range(0, partition_width):
+                    img_adaptive_hist_eq[(x*partition_width)+i][(y*partition_height) + j] = partition_area[i][j]
+
+    return img_adaptive_hist_eq
+
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
     # PART1
 
-    img = read_image(INPUT_PATH + "a1.png")
+    '''img = read_image(INPUT_PATH + "a1.png")
     output = rotate_image(img, 45, "linear")
     write_image(output, OUTPUT_PATH + "a1_45_linear.png")
 
@@ -210,7 +232,7 @@ if __name__ == '__main__':
 
     img = read_image(INPUT_PATH + "a2.png")
     output = rotate_image(img, 45, "cubic")
-    write_image(output, OUTPUT_PATH + "a2_45_cubic.png")
+    write_image(output, OUTPUT_PATH + "a2_45_cubic.png")'''
 
     # PART2
     img = read_image(INPUT_PATH + "b1.png", rgb=False)
@@ -221,6 +243,6 @@ if __name__ == '__main__':
 
     # BONUS
     # Define the following function
-    # equalized = adaptive_histogram_equalization(img)
-    # extract_save_histogram(equalized, OUTPUT_PATH + "adaptive_equalized_histogram.png")
-    # write_image(output, OUTPUT_PATH + "adaptive_enhanced_image.png")"""
+    equalized = adaptive_histogram_equalization(img)
+    extract_save_histogram(equalized, OUTPUT_PATH + "adaptive_equalized_histogram.png")
+    write_image(equalized, OUTPUT_PATH + "adaptive_enhanced_image.png")
