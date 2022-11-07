@@ -49,8 +49,23 @@ Because both bilinear and bicubic interpolation require finding the closest pixe
 	\textit{rot}_y(x,y) &= (x_t(x)\sin \alpha + y_t(y) \cos \alpha ) + \dfrac{N}{2}
 \end{align}
 
+We computed both bilinear and bicubic interpolation for $(\textit{rot}_x(x,y), \textit{rot}_y(x,y)) $ coordinate of the input image, then assigned the result to the brightness value of $(x,y)$ in the output image.
 \subsection{Bilinear Interpolation}
+We used the weighted means definition of bilinear interpolation, where $(x_1, y_1)$, $(x_1, y_2)$, $(x_2, y_1)$, and $(x_2, y_2)$ are the 4 closest pixel to a point $(x, y)$, the brightness value at $(x, y)$ would be calculated as,
+\begin{align}
+	w_{11} &= \dfrac{(x_2-x)(y_2-y)}{(x_2-x_1)(y_2 - y_1)}\\
+	w_{12} &= \dfrac{(x_2-x)(y-y_1)}{(x_2-x_1)(y_2 - y_1)}\\
+	w_{21} &= \dfrac{(x-x_1)(y_2-y)}{(x_2-x_1)(y_2 - y_1)}\\
+	w_{22} &= \dfrac{(x-x_1)(y-y_1)}{(x_2-x_1)(y_2 - y_1)}\\
+	f(x,y) &= \sum^1_{i=0}\sum^1_{j=0}w_{ij}f(x_i, y_j)
+\end{align}
 
+We also added additional checks for cases where $(x, y)$ lays directly between 2 points or directly on a point, such that $x_1 = x_2\wedge y_1 \neq y_2$, $x_1 \neq x_2\wedge y_1 )= y_2$, or $x_1 = x_2\wedge y_1 = y_2$. For the first two cases, we removed the argument that is equal to 0 from denominators of $w_{ij}$ and took the weighted mean of only the two points $(x, y)$ lies between. For the third case, we already know the value of 
+\begin{align}
+	f(x,y) = f(x_1, y_1) = f(x_1, y_2) = f(x_2, y_1) = f(x_2, y_2).
+\end{align}
+
+Because we took bilinear interpolation for every pixel in the output image, our calculations took up to 2 minutes for the larger image "a2.png" but produced a satisfactory result for all cases.
 
 \subsection{Bicubic Interpolation}
 Bicubic interpolation is defined as 
