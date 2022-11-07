@@ -82,20 +82,20 @@ def rotate_image_linear(img_func: np.ndarray, degree: float = 0) -> np.ndarray:
                     ret_val[x][y] = img_func[x_floor][y_floor]
 
                 elif x_floor == x_ceil:
-                    ret_val[x][y] = numpy.uint(
+                    ret_val[x][y] = np.uint(
                         img_func[x_floor][y_floor] * (y_ceil - y_coor) +
                         img_func[x_floor][y_ceil] * (y_coor - y_floor))
 
                 elif y_floor == y_ceil:
-                    ret_val[x][y] = numpy.uint(
+                    ret_val[x][y] = np.uint(
                         img_func[x_floor][y_floor] * (x_ceil - x_coor) +
                         img_func[x_ceil][y_floor] * (x_coor - x_floor))
                 else:
-                    ret_val[x][y] = numpy.uint(
-                            img_func[x_floor][y_floor] * (x_ceil - x_coor) * (y_ceil - y_coor) +
-                            img_func[x_floor][y_ceil] * (x_ceil - x_coor) * (y_coor - y_floor) +
-                            img_func[x_ceil][y_floor] * (x_coor - x_floor) * (y_ceil - y_coor) +
-                            img_func[x_ceil][y_ceil] * (x_coor - x_floor) * (y_coor - y_floor))
+                    ret_val[x][y] = np.uint(
+                        img_func[x_floor][y_floor] * (x_ceil - x_coor) * (y_ceil - y_coor) +
+                        img_func[x_floor][y_ceil] * (x_ceil - x_coor) * (y_coor - y_floor) +
+                        img_func[x_ceil][y_floor] * (x_coor - x_floor) * (y_ceil - y_coor) +
+                        img_func[x_ceil][y_ceil] * (x_coor - x_floor) * (y_coor - y_floor))
 
     return ret_val
 

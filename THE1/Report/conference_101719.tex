@@ -43,7 +43,13 @@ image processing, affine transformation, histogram equalization
 \section{Affine Transformation}
 
 \subsection{Rotation}
-
+Because both bilinear and bicubic interpolation require finding the closest pixels in the input image for each pixel in the output image, we created an empty output image and rotated every pixel on it counterclockwise direction, finding the position it would have fall into in the input image. To achieve this for an image with $M\times N$ dimensions rotated $\alpha$ degrees, we used the following formula.
+\begin{align}
+	x_t(x) &= x - \dfrac{M}{2}\\
+	y_t(y) &= y - \dfrac{N}{2}\\
+	\textit{rot}_x(x,y) &= (x_t(x)\cos \alpha - y_t(y) \sin \alpha ) + \dfrac{M}{2}\\
+	\textit{rot}_y(x,y) &= (x_t(x)\sin \alpha + y_t(y) \cos \alpha ) + \dfrac{N}{2}
+\end{align}
 
 \subsection{Bilinear Interpolation}
 
@@ -91,6 +97,8 @@ As most of the available libraries in our disposal does not calculate the values
 	\item \textit{Interpolation} We calculated the brightness value of every pixel of the output image using Equations \ref{BicubicDef} and \ref{BicubicVal}.
 	\item \textit{Normalization} We normalized the brightness values of the output image to $[0,255]$, then rounded them to nearest integer value.
 \end{itemize}
+
+Because this order of operations requiring multiple matrix multiplications for each pixel in the output image, even with optimizations we implemented, this method took upto 10 minutes for the larger "a2.png" image.
 
 \section{Histogram Equalization}
 
