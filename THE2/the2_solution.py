@@ -110,12 +110,7 @@ def hadamart_from_image(img_func: np.ndarray):
 
     print("ret before normalize ", return_val)
     # normalize
-    max = return_val.max()
-    min = return_val.min()
-    ratio = 254/(max-min)
-    for x in range(0, return_val.shape[0]):
-        for y in range(0, return_val.shape[1]):
-            return_val[x][y] = (return_val[x][y] - min)*ratio
+    return_val = normalize(return_val)
 
     print("ara ", ara_basamak)
     print("red ", red_channel)
@@ -127,8 +122,7 @@ def hadamart_from_image(img_func: np.ndarray):
 
 def get_cosine(img_func: np.ndarray):
     # Image in Fourier domain
-    cosineed_image = fp.dct(img_func) 
-    return cosineed_image
+    return fp.dct(img_func)
 
 
 def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> None:
@@ -146,6 +140,12 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
     matplotlib.image.imsave(output_path, output_file, cmap="gray")
 
 
+def normalize(arr: np.ndarray) -> np.ndarray:
+    max_val = arr.max()
+    min_val = arr.min()
+    return (arr - min_val) * (254 / (max_val - min_val))
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -158,11 +158,12 @@ if __name__ == '__main__':
 
     magnitude = abs(output)
     # normalize
-    max = magnitude.max()
+    magnitude = normalize(magnitude)
+    """max = magnitude.max()
     min = magnitude.min()
     ratio = 254/(max-min)
-    magnitude = np.multiply(magnitude,ratio)
-    output =  np.log(1 + magnitude)
+    magnitude = np.multiply(magnitude, ratio)"""
+    output = np.log(1 + magnitude)
 
     write_image(output, OUTPUT_PATH + "deneme.png")
 
@@ -178,10 +179,11 @@ if __name__ == '__main__':
     # Magnitude spectrum
     magnitude = abs(fouriered_image)
     # normalize
-    max = magnitude.max()
+    magnitude = normalize(magnitude)
+    """max = magnitude.max()
     min = magnitude.min()
     ratio = 254/(max-min)
-    magnitude = np.multiply(magnitude, ratio)
+    magnitude = np.multiply(magnitude, ratio)"""
     output = np.log(1 + magnitude)
     write_image(output, OUTPUT_PATH + "fourier_magnitude_1.png")
 
