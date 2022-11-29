@@ -146,6 +146,22 @@ def normalize(arr: np.ndarray) -> np.ndarray:
     return (arr - min_val) * (254 / (max_val - min_val))
 
 
+def generate_gaussian_filter(size_x: int, size_y: int, sd: float) -> np.ndarray:
+    ret_val = np.zeros((size_x, size_y))
+    for x in range(0, size_x):
+        for y in range(0, size_y):
+            ret_val[x][y] = pow(np.e, -2 * np.pi * (x*x + y*y) * sd * sd)
+    return ret_val
+
+
+def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) -> np.ndarray:
+    ret_val = np.zeros((size_x, size_y))
+    for x in range(0, size_x):
+        for y in range(0, size_y):
+            ret_val[x][y] = 1 / (1 + pow((x*x + y*y) / r*r, n))
+    return ret_val
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -199,3 +215,4 @@ if __name__ == '__main__':
     # reconstruct the image
     output = np.real(fp.ifftn(fouriered_image))
     write_image(output, OUTPUT_PATH + "reconstructed_1.png")
+
