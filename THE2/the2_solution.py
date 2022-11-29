@@ -162,6 +162,26 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
     return ret_val
 
 
+def apply_filter(arr: np.ndarray, filter_type: str, pass_type: str, cut_off: float) -> np.ndarray:
+    if filter_type == "ideal":
+        if pass_type == "low":
+            pass
+        if pass_type == "high":
+            pass
+    elif filter_type == "gaussian":
+        fil = generate_gaussian_filter(arr.size[0], arr.size[1], cut_off)
+        if pass_type == "low":
+            return np.multiply(arr, fil)
+        elif pass_type == "high":
+            return np.multiply(1 - fil, arr)
+    elif filter_type == "butterworth":
+        fil = generate_butterworth_filter(arr.size[0], arr.size[1], 2, cut_off)
+        if pass_type == "low":
+            return np.multiply(arr, fil)
+        elif pass_type == "high":
+            return np.multiply(1 - fil, arr)
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -202,7 +222,7 @@ if __name__ == '__main__':
     magnitude = np.multiply(magnitude, ratio)"""
     output = np.log(1 + magnitude)
     write_image(output, OUTPUT_PATH + "fourier_magnitude_1.png")
-
+    
     # Kowalsky enhance >:(
     output = fold_image_to_center(magnitude)
     output = np.log(1 + output)
