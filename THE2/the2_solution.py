@@ -27,41 +27,43 @@ def read_image(img_path: str, rgb: bool = True) -> np.ndarray:
     
 
 def get_rgb(img_func: np.ndarray, channel: str, full_image: bool = True) -> np.ndarray:
-    if channel == 'R' :
+    if channel == 'R':
         if full_image:
             return_val = np.zeros(img_func.shape)
-            return_val[:,:,0] = img_func[:,:,0]
-            return  return_val
+            return_val[:, :, 0] = img_func[:, :, 0]
+            return return_val
         else:
-            return img_func[:,:,0]
+            return img_func[:, :, 0]
     if channel == 'G':
         if full_image:
             return_val = np.zeros(img_func.shape)
-            return_val[:,:,1] = img_func[:,:,1]
-            return  return_val
+            return_val[:, :, 1] = img_func[:, :, 1]
+            return return_val
         else:
-            return img_func[:,:,1]
+            return img_func[:, :, 1]
     if channel == 'B':
         if full_image:
             return_val = np.zeros(img_func.shape)
-            return_val[:,:,2] = img_func[:,:,2]
-            return  return_val
+            return_val[:, :, 2] = img_func[:, :, 2]
+            return return_val
         else:
-            return img_func[:,:,2]
-        
+            return img_func[:, :, 2]
+
+
 def get_fast_fourier(img_func: np.ndarray):
     # Image in Fourier domain
-    fouriered_image = fp.fftn(img_func) 
-    return fouriered_image
+    return fp.fftn(img_func)
+
 
 def fold_image_to_center(img_func: np.ndarray):
     shape = img_func.shape
     print(shape)
-    img_func[0:(shape[0]//2), 0:(shape[1]//2)] = np.flip(img_func[0:(shape[0]//2), 0:(shape[1]//2)], (0, 1)) #flip upper_left
-    img_func[(shape[0]//2):, 0:(shape[1]//2)] = np.flip(img_func[(shape[0]//2):, 0:(shape[1]//2)], (0, 1))         #flip upper_right
-    img_func[0:(shape[0]//2), (shape[1]//2):] = np.flip(img_func[0:(shape[0]//2), (shape[1]//2):], (0, 1))    #flip bottom_left
-    img_func[(shape[0]//2):, (shape[1]//2):] = np.flip(img_func[(shape[0]//2):, (shape[1]//2):], (0, 1))        #flip bottom_right
+    img_func[0:(shape[0]//2), 0:(shape[1]//2)] = np.flip(img_func[0:(shape[0]//2), 0:(shape[1]//2)], (0, 1))  # flip upper_left
+    img_func[(shape[0]//2):, 0:(shape[1]//2)] = np.flip(img_func[(shape[0]//2):, 0:(shape[1]//2)], (0, 1))  # flip upper_right
+    img_func[0:(shape[0]//2), (shape[1]//2):] = np.flip(img_func[0:(shape[0]//2), (shape[1]//2):], (0, 1))    # flip bottom_left
+    img_func[(shape[0]//2):, (shape[1]//2):] = np.flip(img_func[(shape[0]//2):, (shape[1]//2):], (0, 1))  # flip bottom_right
     return img_func
+
 
 def zero_padding_to_square(img_func: np.ndarray):
     shape = img_func.shape
@@ -82,10 +84,10 @@ def zero_padding_to_square(img_func: np.ndarray):
     if maxv > shape[1]+1000:
         maxv = maxv/2
     
-    padded_img = np.zeros((maxh,maxv,3))
+    padded_img = np.zeros((maxh, maxv, 3))
     for i in range(0, maxh):
         for j in range(0, maxv):
-            if (i < shape[0] and j < shape[1]):
+            if i < shape[0] and j < shape[1]:
                 padded_img[i][j][0] = img_func[i][j][0]
                 padded_img[i][j][1] = img_func[i][j][1]
                 padded_img[i][j][2] = img_func[i][j][2]
@@ -95,6 +97,7 @@ def zero_padding_to_square(img_func: np.ndarray):
                 padded_img[i][j][2] = 0
     
     return padded_img
+
 
 def hadamart_from_image(img_func: np.ndarray):
     img_func = zero_padding_to_square(img_func)
@@ -106,25 +109,27 @@ def hadamart_from_image(img_func: np.ndarray):
     return_val = np.matmul(ara_basamak, hadamard_matrixm)
 
     print("ret before normalize ", return_val)
-    #normalize
+    # normalize
     max = return_val.max()
     min = return_val.min()
     ratio = 254/(max-min)
     for x in range(0, return_val.shape[0]):
         for y in range(0, return_val.shape[1]):
-                return_val[x][y] = (return_val[x][y] - min)*ratio
+            return_val[x][y] = (return_val[x][y] - min)*ratio
 
     print("ara ", ara_basamak)
-    print("red ",red_channel)
+    print("red ", red_channel)
     print("hadan ", hadamard_matrixn.shape)
     print("hadam ", hadamard_matrixm.shape)
     print("ret ", return_val)
     return return_val
 
+
 def get_cosine(img_func: np.ndarray):
     # Image in Fourier domain
     cosineed_image = fp.dct(img_func) 
     return cosineed_image
+
 
 def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> None:
     shape = img_func.shape
@@ -141,22 +146,18 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
     matplotlib.image.imsave(output_path, output_file, cmap="gray")
 
 
-
-
-
-
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
     
-    #####get channel and test
+    ##### get channel and test
     img = read_image(INPUT_PATH + "1.png")
     red_channel = get_rgb(img, 'R', False)
 
     output = get_cosine(red_channel)
 
     magnitude = abs(output)
-    #normalize
+    # normalize
     max = magnitude.max()
     min = magnitude.min()
     ratio = 254/(max-min)
@@ -165,10 +166,10 @@ if __name__ == '__main__':
 
     write_image(output, OUTPUT_PATH + "deneme.png")
 
-    #####get channel and test
+    ##### get channel and test
     img = read_image(INPUT_PATH + "1.png")
     red_channel = get_rgb(img, 'R', False)
-    #write_image(output, OUTPUT_PATH + "1_red.png")
+    # write_image(output, OUTPUT_PATH + "1_red.png")
 
     ### get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
@@ -176,23 +177,23 @@ if __name__ == '__main__':
     ### show fourier transform
     # Magnitude spectrum
     magnitude = abs(fouriered_image)
-    #normalize
+    # normalize
     max = magnitude.max()
     min = magnitude.min()
     ratio = 254/(max-min)
-    magnitude = np.multiply(magnitude,ratio)
-    output =  np.log(1 + magnitude)
+    magnitude = np.multiply(magnitude, ratio)
+    output = np.log(1 + magnitude)
     write_image(output, OUTPUT_PATH + "fourier_magnitude_1.png")
 
-    #Kowalsky enhance >:(
+    # Kowalsky enhance >:(
     output = fold_image_to_center(magnitude)
-    output =  np.log(1 + output)
+    output = np.log(1 + output)
     write_image(output, OUTPUT_PATH + "folded_fourier_magnitude_1.png")
 
-    #angle spectrum
+    # angle spectrum
     angle = np.angle(fouriered_image)
     write_image(output, OUTPUT_PATH + "fourier_angle_1.png")
 
-    #reconstruct the image
+    # reconstruct the image
     output = np.real(fp.ifftn(fouriered_image))
     write_image(output, OUTPUT_PATH + "reconstructed_1.png")
