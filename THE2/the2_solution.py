@@ -55,7 +55,7 @@ def get_fast_fourier(img_func: np.ndarray):
     return fp.fftn(img_func)
 
 
-def visualize_fourier(img_func: np.ndarray):
+def visualize_fourier(img_func: np.ndarray) -> np.ndarray:
     # show fourier transform
     # Magnitude spectrum
     magnitude = abs(img_func)
@@ -367,17 +367,25 @@ def generate_ideal_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
 
 def generate_gaussian_filter(size_x: int, size_y: int, sd: float) -> np.ndarray:
     ret_val = np.zeros((size_x, size_y))
+    centerx = size_x / 2
+    centery = size_y / 2
     for x in range(0, size_x):
         for y in range(0, size_y):
-            ret_val[x][y] = pow(np.e, -2 * np.pi * (x*x + y*y) * sd * sd)
+            tx = x-centerx
+            ty = y-centery
+            ret_val[x][y] = pow(np.e, -2 * np.pi * (tx*tx + ty*ty) * sd * sd)
     return ret_val
 
 
 def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) -> np.ndarray:
     ret_val = np.zeros((size_x, size_y))
+    centerx = size_x / 2
+    centery = size_y / 2
     for x in range(0, size_x):
         for y in range(0, size_y):
-            ret_val[x][y] = 1 / (1 + pow((x*x + y*y) / r*r, n))
+            tx = x - centerx
+            ty = y - centery
+            ret_val[x][y] = 1 / (1 + pow((tx*tx + ty*ty) / r*r, n))
     return ret_val
 
 
@@ -399,18 +407,16 @@ def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
-    
-
-    
     # everything_fourier("1.png")  #takes fourier transformation of an image for every channel then reconstructs them and creates final image -> total 10 images
 
     # everything_cosine("1.png")   #takes cosine transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
    
     # everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
-    
-    
 
     img = read_image(INPUT_PATH + "3.png")
+    write_image(normalize(generate_ideal_filter(50, 50, 10)), OUTPUT_PATH + "ideal_low.png")
+    write_image(normalize(generate_gaussian_filter(50, 50, 10)), OUTPUT_PATH + "gaussian_low.png")
+    write_image(normalize(generate_butterworth_filter(50, 50, 2, 10)), OUTPUT_PATH + "butterworth_low.png")
     final_image = np.zeros(img.shape)
 
     red_channel = get_rgb(img, 'R', False)
@@ -419,9 +425,13 @@ if __name__ == '__main__':
     # get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
     output = visualize_fourier(fouriered_image)
-    output = apply_filter(output, "ideal", "low", 50)
 
-    write_image(output, OUTPUT_PATH + "filtered_fourier_magnitude_red_"+"3.png")
+    write_image(apply_filter(output, "ideal", "low", 50), OUTPUT_PATH + "ffmr_ideal_low"+"3.png")
+    write_image(apply_filter(output, "ideal", "high", 50), OUTPUT_PATH + "ffmr_ideal_high" + "3.png")
+    write_image(apply_filter(output, "gaussian", "low", 50), OUTPUT_PATH + "ffmr_gaussian_low" + "3.png")
+    write_image(apply_filter(output, "gaussian", "high", 50), OUTPUT_PATH + "ffmr_gaussian_high" + "3.png")
+    write_image(apply_filter(output, "butterworth", "low", 50), OUTPUT_PATH + "ffmr_butterworth_low" + "3.png")
+    write_image(apply_filter(output, "butterworth", "high", 50), OUTPUT_PATH + "ffmr_butterworth_high" + "3.png")
 
     # reconstruct the image
     fouriered_image = fold_image_to_center(fouriered_image)
@@ -429,4 +439,9 @@ if __name__ == '__main__':
     fouriered_image = fold_image_to_center(fouriered_image)
     output = np.real(fp.ifftn(fouriered_image))
     final_image[:, :, 0] = output[:, :]
-    write_image(output, OUTPUT_PATH + "filtered_reconstructed_red_"+"3.png")
+    write_image(apply_filter(output, "ideal", "low", 50), OUTPUT_PATH + "ffcr_ideal_low" + "3.png")
+    write_image(apply_filter(output, "ideal", "high", 50), OUTPUT_PATH + "ffcr_ideal_high" + "3.png")
+    write_image(apply_filter(output, "gaussian", "low", 50), OUTPUT_PATH + "ffcr_gaussian_low" + "3.png")
+    write_image(apply_filter(output, "gaussian", "high", 50), OUTPUT_PATH + "ffcr_gaussian_high" + "3.png")
+    write_image(apply_filter(output, "butterworth", "low", 50), OUTPUT_PATH + "ffcr_butterworth_low" + "3.png")
+    write_image(apply_filter(output, "butterworth", "high", 50), OUTPUT_PATH + "ffcr_butterworth_high" + "3.png")
