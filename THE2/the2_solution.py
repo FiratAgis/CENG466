@@ -343,7 +343,7 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
                     output_file[x][y][z] = float(img_func[x][y][z]) / 255
             else:
                 output_file[x][y] = float(img_func[x][y]) / 255
-    matplotlib.image.imsave(output_path, output_file, cmap="gray")
+    matplotlib.image.imsave(output_path, output_file)
 
 
 def normalize(arr: np.ndarray) -> np.ndarray:
@@ -404,6 +404,15 @@ def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off
         return np.multiply(1 - fil, img_func)
 
 
+def process_image(image_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, channel: str) -> np.ndarray:
+    rgb_channel = get_rgb(image_func, channel, False)
+    transformed_image = get_fast_fourier(rgb_channel)
+    transformed_image = fold_image_to_center(transformed_image)
+    filtered_image = apply_filter(transformed_image, filter_type, pass_type, cut_off)
+    reconstructed_image = np.real(fp.ifftn(fold_image_to_center(filtered_image)))
+    return reconstructed_image
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -414,11 +423,16 @@ if __name__ == '__main__':
     # everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
 
     img = read_image(INPUT_PATH + "3.png")
-    write_image(normalize(generate_ideal_filter(50, 50, 10)), OUTPUT_PATH + "ideal_low.png")
-    write_image(normalize(generate_gaussian_filter(50, 50, 10)), OUTPUT_PATH + "gaussian_low.png")
-    write_image(normalize(generate_butterworth_filter(50, 50, 2, 10)), OUTPUT_PATH + "butterworth_low.png")
-    final_image = np.zeros(img.shape)
+    for fil in ("ideal", "gaussian", "butterworth",):
+        for pas in ("low", "high"):
+            for cut in (10, 25, 50):
+                final_image = np.zeros(img.shape)
+                final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
+                final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
+                final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
+                write_image(final_image, OUTPUT_PATH + f"3_{fil}_{pas}_{cut}.png")
 
+    """
     red_channel = get_rgb(img, 'R', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
@@ -435,13 +449,20 @@ if __name__ == '__main__':
 
     # reconstruct the image
     fouriered_image = fold_image_to_center(fouriered_image)
-    fouriered_image = apply_filter(fouriered_image, "ideal", "low", 50)
-    fouriered_image = fold_image_to_center(fouriered_image)
-    output = np.real(fp.ifftn(fouriered_image))
-    final_image[:, :, 0] = output[:, :]
-    write_image(apply_filter(output, "ideal", "low", 50), OUTPUT_PATH + "ffcr_ideal_low" + "3.png")
-    write_image(apply_filter(output, "ideal", "high", 50), OUTPUT_PATH + "ffcr_ideal_high" + "3.png")
-    write_image(apply_filter(output, "gaussian", "low", 50), OUTPUT_PATH + "ffcr_gaussian_low" + "3.png")
-    write_image(apply_filter(output, "gaussian", "high", 50), OUTPUT_PATH + "ffcr_gaussian_high" + "3.png")
-    write_image(apply_filter(output, "butterworth", "low", 50), OUTPUT_PATH + "ffcr_butterworth_low" + "3.png")
-    write_image(apply_filter(output, "butterworth", "high", 50), OUTPUT_PATH + "ffcr_butterworth_high" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "low", 50)))),
+                OUTPUT_PATH + "ffcr_ideal_low" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "high", 50)))),
+                OUTPUT_PATH + "ffcr_ideal_high" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "gaussian", "low", 50)))),
+                OUTPUT_PATH + "ffcr_gaussian_low" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "gaussian", "high", 50)))),
+                OUTPUT_PATH + "ffcr_gaussian_high" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "butterworth", "low", 50)))),
+                OUTPUT_PATH + "ffcr_butterworth_low" + "3.png")
+    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "butterworth", "high", 50)))),
+                OUTPUT_PATH + "ffcr_butterworth_high" + "3.png")
+
+    output = np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "low", 50))))
+
+    final_image[:, :, 0] = output[:, :]"""
+
