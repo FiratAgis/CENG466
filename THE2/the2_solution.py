@@ -54,6 +54,7 @@ def get_fast_fourier(img_func: np.ndarray):
     # Image in Fourier domain
     return fp.fftn(img_func)
 
+
 def visualize_fourier(fouriered_image: np.ndarray):
     ### show fourier transform
     # Magnitude spectrum
@@ -61,9 +62,9 @@ def visualize_fourier(fouriered_image: np.ndarray):
     # normalize
     magnitude = normalize(magnitude)
     # Kowalsky enhance >:(
-    output = fold_image_to_center(magnitude)
-    output = np.log(1 + output)
-    return output
+    ret_val = fold_image_to_center(magnitude)
+    return np.log(1 + ret_val)
+
 
 def everything_fourier(image_name: str):
     ##### get channel and test
@@ -131,6 +132,7 @@ def everything_fourier(image_name: str):
     final_image = normalize(final_image)
     write_image(final_image, OUTPUT_PATH + "reconstructed_final_"+image_name)
 
+
 def fold_image_to_center(img_func: np.ndarray):
     shape = img_func.shape
     img_func[0:(shape[0]//2), 0:(shape[1]//2)] = np.flip(img_func[0:(shape[0]//2), 0:(shape[1]//2)], (0, 1))  # flip upper_left
@@ -138,7 +140,6 @@ def fold_image_to_center(img_func: np.ndarray):
     img_func[0:(shape[0]//2), (shape[1]//2):] = np.flip(img_func[0:(shape[0]//2), (shape[1]//2):], (0, 1))    # flip bottom_left
     img_func[(shape[0]//2):, (shape[1]//2):] = np.flip(img_func[(shape[0]//2):, (shape[1]//2):], (0, 1))  # flip bottom_right
     return img_func
-
 
 
 def zero_padding_to_square(img_func: np.ndarray):
@@ -170,30 +171,30 @@ def zero_padding_to_square(img_func: np.ndarray):
     
     return padded_img
 
-def hadamart_from_image(img_func: np.ndarray):
+
+def hadamart_from_image(img_func: np.ndarray) -> np.ndarray:
     img_func = zero_padding_to_square(img_func)
     hadamard_matrixn = hadamard(img_func.shape[0])
     hadamard_matrixm = hadamard(img_func.shape[1])
     ara_basamak = np.matmul(hadamard_matrixn, img_func)
-    return_val = np.matmul(ara_basamak, hadamard_matrixm)
-    return return_val
+    return np.matmul(ara_basamak, hadamard_matrixm)
 
-def reverse_hadamard(hadamarded_img: np.ndarray):
+
+def reverse_hadamard(hadamarded_img: np.ndarray) -> np.ndarray:
     # print(img_func.shape)
     hadamard_matrixn = hadamard(hadamarded_img.shape[0])
     hadamard_matrixm = hadamard(hadamarded_img.shape[1])
     inv_hadamard_matrixn = np.linalg.inv(hadamard_matrixn)
     inv_hadamard_matrixm = np.linalg.inv(hadamard_matrixm)
     ara_basamak = np.matmul(inv_hadamard_matrixn, hadamarded_img)
-    return_val = np.matmul(ara_basamak, inv_hadamard_matrixm)
+    return np.matmul(ara_basamak, inv_hadamard_matrixm)
 
-    return return_val
 
-def visualize_hadamard(hadamarded_img: np.ndarray):
+def visualize_hadamard(hadamarded_img: np.ndarray) -> np.ndarray:
     magnitude = abs(hadamarded_img)
     magnitude = normalize(magnitude)
-    return_val = np.log(1 + magnitude)
-    return return_val
+    return np.log(1 + magnitude)
+
 
 def everything_hadamard(image_name: str):
     ##### get channel and test
@@ -256,10 +257,10 @@ def everything_hadamard(image_name: str):
     write_image(final_image, OUTPUT_PATH + "hadamard_reconstructed_final_"+image_name)
 
 
-
 def get_cosine(img_func: np.ndarray):
     # Image in Fourier domain
     return fp.dct(img_func)
+
 
 def visualize_cosine(fouriered_image: np.ndarray):
     ### show fourier transform
@@ -268,8 +269,8 @@ def visualize_cosine(fouriered_image: np.ndarray):
     # normalize
     magnitude = normalize(magnitude)
     # Kowalsky enhance >:(
-    output = np.log(1 + magnitude)
-    return output
+    return np.log(1 + magnitude)
+
 
 def everything_cosine(image_name: str):
     ##### get channel and test
@@ -352,6 +353,7 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
                 output_file[x][y] = float(img_func[x][y]) / 255
     matplotlib.image.imsave(output_path, output_file, cmap="gray")
 
+
 def normalize(arr: np.ndarray) -> np.ndarray:
     max_val = arr.max()
     min_val = arr.min()
@@ -364,7 +366,7 @@ def generate_ideal_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
     centery = size_y/2
     for x in range(0, size_x):
         for y in range(0, size_y):
-            if( math.sqrt((x-centerx)*(x-centerx) + (y-centery)*(y-centery)) <= r):
+            if math.sqrt((x - centerx) * (x - centerx) + (y - centery) * (y - centery)) <= r:
                 return_val[x][y] = 1
             else:
                 return_val[x][y] = 0
