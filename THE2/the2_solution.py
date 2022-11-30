@@ -55,10 +55,10 @@ def get_fast_fourier(img_func: np.ndarray):
     return fp.fftn(img_func)
 
 
-def visualize_fourier(fouriered_image: np.ndarray):
-    ### show fourier transform
+def visualize_fourier(img_func: np.ndarray):
+    # show fourier transform
     # Magnitude spectrum
-    magnitude = abs(fouriered_image)
+    magnitude = abs(img_func)
     # normalize
     magnitude = normalize(magnitude)
     # Kowalsky enhance >:(
@@ -67,14 +67,14 @@ def visualize_fourier(fouriered_image: np.ndarray):
 
 
 def everything_fourier(image_name: str):
-    ##### get channel and test
+    # get channel and test
     img = read_image(INPUT_PATH + image_name)
     final_image = np.zeros(img.shape)
 
     red_channel = get_rgb(img, 'R', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
     output = visualize_fourier(fouriered_image)
 
@@ -89,12 +89,11 @@ def everything_fourier(image_name: str):
     final_image[:, :, 0] = output[:, :]
     write_image(output, OUTPUT_PATH + "reconstructed_red_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'G', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
     output = visualize_fourier(fouriered_image)
 
@@ -109,12 +108,11 @@ def everything_fourier(image_name: str):
     final_image[:, :, 1] = output[:, :]
     write_image(output, OUTPUT_PATH + "reconstructed_green_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'B', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
     output = visualize_fourier(fouriered_image)
 
@@ -197,14 +195,14 @@ def visualize_hadamard(hadamarded_img: np.ndarray) -> np.ndarray:
 
 
 def everything_hadamard(image_name: str):
-    ##### get channel and test
+    # get channel and test
     img = read_image(INPUT_PATH + image_name)
     original_shape = img.shape
 
     red_channel = get_rgb(img, 'R', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = hadamart_from_image(red_channel)
     output = visualize_hadamard(fouriered_image)
 
@@ -216,34 +214,30 @@ def everything_hadamard(image_name: str):
     final_image[:, :, 0] = output[:, :]
     write_image(output, OUTPUT_PATH + "hadamard_reconstructed_red_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'G', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = hadamart_from_image(red_channel)
     output = visualize_hadamard(fouriered_image)
 
     write_image(output, OUTPUT_PATH + "folded_hadamard_magnitude_green_"+image_name)
-
 
     # reconstruct the image
     output = reverse_hadamard(fouriered_image)
     final_image[:, :, 1] = output[:, :]
     write_image(output, OUTPUT_PATH + "hadamard_reconstructed_green_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'B', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = hadamart_from_image(red_channel)
     output = visualize_hadamard(fouriered_image)
 
     write_image(output, OUTPUT_PATH + "folded_hadamard_magnitude_blue_"+image_name)
-
 
     # reconstruct the image
     output = reverse_hadamard(fouriered_image)
@@ -262,10 +256,10 @@ def get_cosine(img_func: np.ndarray):
     return fp.dct(img_func)
 
 
-def visualize_cosine(fouriered_image: np.ndarray):
-    ### show fourier transform
+def visualize_cosine(img_func: np.ndarray):
+    # show fourier transform
     # Magnitude spectrum
-    magnitude = abs(fouriered_image)
+    magnitude = abs(img_func)
     # normalize
     magnitude = normalize(magnitude)
     # Kowalsky enhance >:(
@@ -273,14 +267,14 @@ def visualize_cosine(fouriered_image: np.ndarray):
 
 
 def everything_cosine(image_name: str):
-    ##### get channel and test
+    # get channel and test
     img = read_image(INPUT_PATH + image_name)
     final_image = np.zeros(img.shape)
 
     red_channel = get_rgb(img, 'R', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_cosine(red_channel)
     output = visualize_cosine(fouriered_image)
 
@@ -295,12 +289,11 @@ def everything_cosine(image_name: str):
     final_image[:, :, 0] = output[:, :]
     write_image(output, OUTPUT_PATH + "cosine_reconstructed_red_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'G', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_cosine(red_channel)
     output = visualize_cosine(fouriered_image)
 
@@ -315,12 +308,11 @@ def everything_cosine(image_name: str):
     final_image[:, :, 1] = output[:, :]
     write_image(output, OUTPUT_PATH + "cosine_reconstructed_green_"+image_name)
 
-
-    ##### get channel and test
+    # get channel and test
     red_channel = get_rgb(img, 'B', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_cosine(red_channel)
     output = visualize_cosine(fouriered_image)
 
@@ -389,25 +381,19 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
     return ret_val
 
 
-def apply_filter(arr: np.ndarray, filter_type: str, pass_type: str, cut_off: float) -> np.ndarray:
+def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float) -> np.ndarray:
     if filter_type == "ideal":
-        fil = generate_ideal_filter(arr.shape[0], arr.shape[1], cut_off)
-        if pass_type == "low":
-            return np.multiply(arr, fil)
-        if pass_type == "high":
-            return np.multiply(1 - fil, arr)
+        fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
     elif filter_type == "gaussian":
-        fil = generate_gaussian_filter(arr.shape[0], arr.shape[1], cut_off)
-        if pass_type == "low":
-            return np.multiply(arr, fil)
-        elif pass_type == "high":
-            return np.multiply(1 - fil, arr)
+        fil = generate_gaussian_filter(img_func.shape[0], img_func.shape[1], cut_off)
     elif filter_type == "butterworth":
-        fil = generate_butterworth_filter(arr.shape[0], arr.shape[1], 2, cut_off)
-        if pass_type == "low":
-            return np.multiply(arr, fil)
-        elif pass_type == "high":
-            return np.multiply(1 - fil, arr)
+        fil = generate_butterworth_filter(img_func.shape[0], img_func.shape[1], 2, cut_off)
+    else:
+        fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
+    if pass_type == "low":
+        return np.multiply(img_func, fil)
+    if pass_type == "high":
+        return np.multiply(1 - fil, img_func)
 
 
 if __name__ == '__main__':
@@ -416,11 +402,11 @@ if __name__ == '__main__':
     
 
     
-    #everything_fourier("1.png")  #takes fourier transformation of an image for every channel then recunstructs them and creates final image -> total 10 images
+    # everything_fourier("1.png")  #takes fourier transformation of an image for every channel then reconstructs them and creates final image -> total 10 images
 
-    #everything_cosine("1.png")   #takes cosine transformation of an image for every channel then recunstructs them and creates final image  -> total 10 images
+    # everything_cosine("1.png")   #takes cosine transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
    
-    #everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then recunstructs them and creates final image  -> total 10 images
+    # everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
     
     
 
@@ -430,13 +416,12 @@ if __name__ == '__main__':
     red_channel = get_rgb(img, 'R', False)
     # write_image(output, OUTPUT_PATH + "1_red.png")
 
-    ### get fourier transformation of image
+    # get fourier transformation of image
     fouriered_image = get_fast_fourier(red_channel)
     output = visualize_fourier(fouriered_image)
     output = apply_filter(output, "ideal", "low", 50)
 
     write_image(output, OUTPUT_PATH + "filtered_fourier_magnitude_red_"+"3.png")
-
 
     # reconstruct the image
     fouriered_image = fold_image_to_center(fouriered_image)
