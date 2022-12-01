@@ -389,7 +389,7 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
     return ret_val
 
 
-def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, optional:float = 2.0) -> np.ndarray:
+def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, optional: float = 2.0) -> np.ndarray:
     if filter_type == "I":
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
     elif filter_type == "G":
@@ -404,14 +404,18 @@ def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off
         return np.multiply(1 - fil, img_func)
 
 
+def time_domain_to_frequency(image_func: np.ndarray, channel: str):
+    rgb_channel = get_rgb(image_func, channel, False)
+    transformed_image = get_fast_fourier(rgb_channel)
+    return fold_image_to_center(transformed_image)
+
+
 def frequency_domain_to_time_domain(image_func: np.ndarray) -> np.ndarray:
     return np.real(fp.ifftn(fold_image_to_center(image_func)))
 
 
 def process_image(image_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, channel: str) -> np.ndarray:
-    rgb_channel = get_rgb(image_func, channel, False)
-    transformed_image = get_fast_fourier(rgb_channel)
-    transformed_image = fold_image_to_center(transformed_image)
+    transformed_image = time_domain_to_frequency(image_func, channel)
     filtered_image = apply_filter(transformed_image, filter_type, pass_type, cut_off)
     return frequency_domain_to_time_domain(filtered_image)
 
