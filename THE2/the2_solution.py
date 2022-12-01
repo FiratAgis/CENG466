@@ -15,6 +15,9 @@ from scipy.linalg import hadamard
 
 INPUT_PATH = "./THE_2 images/"
 OUTPUT_PATH = "./Outputs/"
+R1 = 10
+R2 = 20
+R3 = 50
 
 
 def read_image(img_path: str, rgb: bool = True) -> np.ndarray:
@@ -389,7 +392,7 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
     return ret_val
 
 
-def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, optional: float = 2.0) -> np.ndarray:
+def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, optional: float = 1.0) -> np.ndarray:
     if filter_type == "I":
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
     elif filter_type == "G":
@@ -414,10 +417,79 @@ def frequency_domain_to_time_domain(image_func: np.ndarray) -> np.ndarray:
     return np.real(fp.ifftn(fold_image_to_center(image_func)))
 
 
-def process_image(image_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, channel: str) -> np.ndarray:
+def process_image(image_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, channel: str, optional: float = 1.0) -> np.ndarray:
     transformed_image = time_domain_to_frequency(image_func, channel)
-    filtered_image = apply_filter(transformed_image, filter_type, pass_type, cut_off)
+    filtered_image = apply_filter(transformed_image, filter_type, pass_type, cut_off, optional)
     return frequency_domain_to_time_domain(filtered_image)
+
+
+def exhaustive_r_search():
+    img = read_image(INPUT_PATH + "3.png")
+    for fil in ("I", "G", "B",):
+        for pas in ("LP", "HP"):
+            for cut in (1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 100):
+                final_image = np.zeros(img.shape)
+                final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
+                final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
+                final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
+                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
+                print(f"{fil}{pas}_{cut}")
+
+
+def exhaustive_n_search():
+    img = read_image(INPUT_PATH + "3.png")
+    for fil in ("G", "B",):
+        for pas in ("LP", "HP"):
+            for cut in (R1, R2, R3):
+                for opt in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10):
+                    final_image = np.zeros(img.shape)
+                    final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R", opt))
+                    final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G", opt))
+                    final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B", opt))
+                    write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}-{opt}.png")
+                    print(f"{fil}{pas}_{cut}-{opt}")
+
+
+def stretch_channel(image_func: np.ndarray, left: int, right: int, min_val: int, max_val: int):
+    area = right - left
+    spectrum = max_val - min_val
+    ratio = spectrum / area
+    ret_val = np.zeros(image_func.shape)
+    for x in range(image_func.shape[0]):
+        for y in range(image_func.shape[1]):
+            if left <= image_func[x, y] <= right:
+                cell = image_func[x, y]
+                cell -= left
+                cell *= ratio
+                cell += min_val
+                ret_val[x, y] = cell
+            else:
+                ret_val[x, y] = image_func[x, y]
+    return ret_val
+
+
+def stretch_image(image_func: np.ndarray, left: int, right: int, min_val: int, max_val: int):
+    area = right - left
+    spectrum = max_val - min_val
+    ratio = spectrum / area
+    ret_val = np.zeros((image_func.shape[0], image_func.shape[1], image_func.shape[2]))
+    for x in range(0, image_func.shape[0]):
+        for y in range(0, image_func.shape[1]):
+            sum_val = sum(image_func[x][y])
+            if left <= (sum_val/3) <= right:
+                ret_val[x][y] = ((image_func[x][y] - (left * (image_func[x][y] / sum_val))) * ratio) + (min_val * (image_func[x][y] / sum_val))
+            else:
+                ret_val[x][y] = image_func[x][y]
+    return ret_val
+
+
+def power_transformation(image_func: np.ndarray, c: float, t: float):
+    ret_val = np.zeros(image_func.shape)
+    for x in range(image_func.shape[0]):
+        for y in range(image_func.shape[1]):
+            for z in range(image_func.shape[2]):
+                ret_val[x][y][z] = c * pow(image_func[x][y][z], t)
+    return ret_val
 
 
 if __name__ == '__main__':
@@ -429,47 +501,18 @@ if __name__ == '__main__':
    
     # everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
 
-    img = read_image(INPUT_PATH + "3.png")
+    """img = read_image(INPUT_PATH + "3.png")
     for fil in ("I", "G", "B",):
         for pas in ("LP", "HP"):
-            for cut in (1, 5, 25):
+            for cut in (R1, R2, R3,):
                 final_image = np.zeros(img.shape)
                 final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
                 final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
                 final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
-                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
+                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")"""
 
-    """
-    red_channel = get_rgb(img, 'R', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_fast_fourier(red_channel)
-    output = visualize_fourier(fouriered_image)
-
-    write_image(apply_filter(output, "ideal", "low", 50), OUTPUT_PATH + "ffmr_ideal_low"+"3.png")
-    write_image(apply_filter(output, "ideal", "high", 50), OUTPUT_PATH + "ffmr_ideal_high" + "3.png")
-    write_image(apply_filter(output, "gaussian", "low", 50), OUTPUT_PATH + "ffmr_gaussian_low" + "3.png")
-    write_image(apply_filter(output, "gaussian", "high", 50), OUTPUT_PATH + "ffmr_gaussian_high" + "3.png")
-    write_image(apply_filter(output, "butterworth", "low", 50), OUTPUT_PATH + "ffmr_butterworth_low" + "3.png")
-    write_image(apply_filter(output, "butterworth", "high", 50), OUTPUT_PATH + "ffmr_butterworth_high" + "3.png")
-
-    # reconstruct the image
-    fouriered_image = fold_image_to_center(fouriered_image)
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "low", 50)))),
-                OUTPUT_PATH + "ffcr_ideal_low" + "3.png")
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "high", 50)))),
-                OUTPUT_PATH + "ffcr_ideal_high" + "3.png")
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "gaussian", "low", 50)))),
-                OUTPUT_PATH + "ffcr_gaussian_low" + "3.png")
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "gaussian", "high", 50)))),
-                OUTPUT_PATH + "ffcr_gaussian_high" + "3.png")
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "butterworth", "low", 50)))),
-                OUTPUT_PATH + "ffcr_butterworth_low" + "3.png")
-    write_image(np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "butterworth", "high", 50)))),
-                OUTPUT_PATH + "ffcr_butterworth_high" + "3.png")
-
-    output = np.real(fp.ifftn(fold_image_to_center(apply_filter(fouriered_image, "ideal", "low", 50))))
-
-    final_image[:, :, 0] = output[:, :]"""
+    img = read_image(INPUT_PATH + "7.png")
+    for i in range(1, 10):
+        final_image = normalize(power_transformation(img, 1, pow(0.9, i)))
+        write_image(final_image, OUTPUT_PATH + f"pow_{i}.png")
 
