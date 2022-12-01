@@ -365,15 +365,16 @@ def generate_ideal_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
     return return_val
 
 
-def generate_gaussian_filter(size_x: int, size_y: int, sd: float) -> np.ndarray:
+def generate_gaussian_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
     ret_val = np.zeros((size_x, size_y))
     centerx = size_x / 2
     centery = size_y / 2
+    sd = 2
     for x in range(0, size_x):
         for y in range(0, size_y):
             tx = x-centerx
             ty = y-centery
-            ret_val[x][y] = pow(np.e, -2 * np.pi * (tx*tx + ty*ty) * sd * sd)
+            ret_val[x][y] = pow(np.e, -2 * np.pi * ((tx*tx + ty*ty) / (r * r)) * sd * sd)
     return ret_val
 
 
@@ -385,7 +386,7 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
         for y in range(0, size_y):
             tx = x - centerx
             ty = y - centery
-            ret_val[x][y] = 1 / (1 + pow((tx*tx + ty*ty) / r*r, n))
+            ret_val[x][y] = 1 / (1 + pow((tx*tx + ty*ty) / r, n))
     return ret_val
 
 
@@ -425,7 +426,7 @@ if __name__ == '__main__':
     img = read_image(INPUT_PATH + "3.png")
     for fil in ("ideal", "gaussian", "butterworth",):
         for pas in ("low", "high"):
-            for cut in (10, 25, 50):
+            for cut in (1, 5, 25):
                 final_image = np.zeros(img.shape)
                 final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
                 final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
