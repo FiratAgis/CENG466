@@ -365,11 +365,10 @@ def generate_ideal_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
     return return_val
 
 
-def generate_gaussian_filter(size_x: int, size_y: int, r: float) -> np.ndarray:
+def generate_gaussian_filter(size_x: int, size_y: int, sd: float, r: float) -> np.ndarray:
     ret_val = np.zeros((size_x, size_y))
     centerx = size_x / 2
     centery = size_y / 2
-    sd = 2
     for x in range(0, size_x):
         for y in range(0, size_y):
             tx = x-centerx
@@ -390,13 +389,13 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
     return ret_val
 
 
-def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float) -> np.ndarray:
+def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, optional:float = 2.0) -> np.ndarray:
     if filter_type == "I":
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
     elif filter_type == "G":
-        fil = generate_gaussian_filter(img_func.shape[0], img_func.shape[1], cut_off)
+        fil = generate_gaussian_filter(img_func.shape[0], img_func.shape[1], optional, cut_off)
     elif filter_type == "B":
-        fil = generate_butterworth_filter(img_func.shape[0], img_func.shape[1], 2, cut_off)
+        fil = generate_butterworth_filter(img_func.shape[0], img_func.shape[1], optional, cut_off)
     else:
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
     if pass_type == "LP":
@@ -405,13 +404,16 @@ def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off
         return np.multiply(1 - fil, img_func)
 
 
+def frequency_domain_to_time_domain(image_func: np.ndarray) -> np.ndarray:
+    return np.real(fp.ifftn(fold_image_to_center(image_func)))
+
+
 def process_image(image_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float, channel: str) -> np.ndarray:
     rgb_channel = get_rgb(image_func, channel, False)
     transformed_image = get_fast_fourier(rgb_channel)
     transformed_image = fold_image_to_center(transformed_image)
     filtered_image = apply_filter(transformed_image, filter_type, pass_type, cut_off)
-    reconstructed_image = np.real(fp.ifftn(fold_image_to_center(filtered_image)))
-    return reconstructed_image
+    return frequency_domain_to_time_domain(filtered_image)
 
 
 if __name__ == '__main__':
