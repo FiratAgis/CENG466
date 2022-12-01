@@ -391,17 +391,17 @@ def generate_butterworth_filter(size_x: int, size_y: int, n: float, r: float) ->
 
 
 def apply_filter(img_func: np.ndarray, filter_type: str, pass_type: str, cut_off: float) -> np.ndarray:
-    if filter_type == "ideal":
+    if filter_type == "I":
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
-    elif filter_type == "gaussian":
+    elif filter_type == "G":
         fil = generate_gaussian_filter(img_func.shape[0], img_func.shape[1], cut_off)
-    elif filter_type == "butterworth":
+    elif filter_type == "B":
         fil = generate_butterworth_filter(img_func.shape[0], img_func.shape[1], 2, cut_off)
     else:
         fil = generate_ideal_filter(img_func.shape[0], img_func.shape[1], cut_off)
-    if pass_type == "low":
+    if pass_type == "LP":
         return np.multiply(img_func, fil)
-    if pass_type == "high":
+    if pass_type == "HP":
         return np.multiply(1 - fil, img_func)
 
 
@@ -424,14 +424,14 @@ if __name__ == '__main__':
     # everything_hadamard("1.png") #takes hadamard transformation of an image for every channel then reconstructs them and creates final image  -> total 10 images
 
     img = read_image(INPUT_PATH + "3.png")
-    for fil in ("ideal", "gaussian", "butterworth",):
-        for pas in ("low", "high"):
+    for fil in ("I", "G", "B",):
+        for pas in ("LP", "HP"):
             for cut in (1, 5, 25):
                 final_image = np.zeros(img.shape)
                 final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
                 final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
                 final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
-                write_image(final_image, OUTPUT_PATH + f"3_{fil}_{pas}_{cut}.png")
+                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
 
     """
     red_channel = get_rgb(img, 'R', False)
