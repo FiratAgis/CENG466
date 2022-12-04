@@ -540,4 +540,4 @@ if __name__ == '__main__':
 
     img = read_image(INPUT_PATH + "7.png")
     final_image = normalize(power_transformation(img, 1, pow(0.9, POW)))
-    write_image(final_image, OUTPUT_PATH + f"pow_{POW}.png")
+    write_image(final_image, OUTPUT_PATH + f"Space7.png")
