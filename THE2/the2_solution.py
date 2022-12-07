@@ -6,7 +6,6 @@ Robin Koç, e246871
 
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.image
 from PIL import Image
 import math
@@ -513,6 +512,44 @@ def power_transformation(image_func: np.ndarray, c: float, t: float):
     return ret_val
 
 
+def power_transformation_by_channel(image_func: np.ndarray, c: float, t: float, channel: str):
+    image_func_actual = get_rgb(image_func, channel, False)
+    ret_val = np.zeros(image_func_actual.shape)
+    for x in range(image_func_actual.shape[0]):
+        for y in range(image_func_actual.shape[1]):
+            ret_val[x][y] = c * pow(image_func_actual[x][y], t)
+    return ret_val
+
+
+def extract_histogram(img_func: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    for x in img_func:
+        for y in x:
+            ret_val[int(y)] = ret_val[int(y)] + 1
+    return ret_val
+
+
+def create_cum_histogram(histogram: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    ret_val[0] = histogram[0]
+    for x in range(1, 256):
+        ret_val[x] = ret_val[x - 1] + histogram[x]
+    return ret_val
+
+
+def histogram_equalization(img_func: np.array):
+    shape = img_func.shape
+    img_hist_eq = np.zeros(shape, dtype=np.uint)
+    histogram = extract_histogram(img_func)
+    cum = create_cum_histogram(histogram)
+    size = float(shape[0] * shape[1])
+    coefficient = 255.0 / size
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            img_hist_eq[x][y] = math.floor(coefficient * cum[img_func[x][y]])
+    return img_hist_eq
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -528,7 +565,7 @@ if __name__ == '__main__':
     # -> total 10 images
     # everything_hadamard("1.png")
 
-    img = read_image(INPUT_PATH + "3.png")
+    """img = read_image(INPUT_PATH + "3.png")
     for fil in ("I", "G", "B",):
         for pas in ("LP", "HP"):
             for cut in (R1, R2, R3,):
@@ -536,7 +573,17 @@ if __name__ == '__main__':
                 final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
                 final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
                 final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
-                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
+                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")"""
+
+    """img = read_image(INPUT_PATH + "6.png")
+    final_image = np.zeros(img.shape)
+    final_image[:, :, 0] = normalize(histogram_equalization(get_rgb(img, 'R', False)))
+    final_image[:, :, 1] = normalize(histogram_equalization(get_rgb(img, 'G', False)))
+    final_image[:, :, 2] = normalize(histogram_equalization(get_rgb(img, 'B', False)))
+    final_image[:, :, 0] = normalize(power_transformation_by_channel(final_image, 1, pow(1.1, POW), 'R'))
+    final_image[:, :, 1] = normalize(power_transformation_by_channel(final_image, 1, pow(1.2, POW), 'G'))
+    final_image = normalize(power_transformation(final_image, 1, pow(0.9, POW)))
+    write_image(final_image, OUTPUT_PATH + f"Space6.png")"""
 
     img = read_image(INPUT_PATH + "7.png")
     final_image = normalize(power_transformation(img, 1, pow(0.9, POW)))
