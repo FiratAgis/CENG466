@@ -565,7 +565,7 @@ if __name__ == '__main__':
     # -> total 10 images
     # everything_hadamard("1.png")
 
-    """img = read_image(INPUT_PATH + "3.png")
+    img = read_image(INPUT_PATH + "3.png")
     for fil in ("I", "G", "B",):
         for pas in ("LP", "HP"):
             for cut in (R1, R2, R3,):
@@ -573,9 +573,9 @@ if __name__ == '__main__':
                 final_image[:, :, 0] = normalize(process_image(img, fil, pas, cut, "R"))
                 final_image[:, :, 1] = normalize(process_image(img, fil, pas, cut, "G"))
                 final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
-                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")"""
+                write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
 
-    """img = read_image(INPUT_PATH + "6.png")
+    img = read_image(INPUT_PATH + "6.png")
     final_image = np.zeros(img.shape)
     final_image[:, :, 0] = normalize(histogram_equalization(get_rgb(img, 'R', False)))
     final_image[:, :, 1] = normalize(histogram_equalization(get_rgb(img, 'G', False)))
@@ -583,7 +583,7 @@ if __name__ == '__main__':
     final_image[:, :, 0] = normalize(power_transformation_by_channel(final_image, 1, pow(1.1, POW), 'R'))
     final_image[:, :, 1] = normalize(power_transformation_by_channel(final_image, 1, pow(1.2, POW), 'G'))
     final_image = normalize(power_transformation(final_image, 1, pow(0.9, POW)))
-    write_image(final_image, OUTPUT_PATH + f"Space6.png")"""
+    write_image(final_image, OUTPUT_PATH + f"Space6.png")
 
     img = read_image(INPUT_PATH + "7.png")
     final_image = normalize(power_transformation(img, 1, pow(0.9, POW)))
