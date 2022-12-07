@@ -58,6 +58,14 @@ def get_fast_fourier(img_func: np.ndarray):
     return fp.fftn(img_func)
 
 
+def hadamart_from_image(img_func: np.ndarray) -> np.ndarray:
+    img_func = zero_padding_to_square(img_func)
+    hadamard_matrix_n = hadamard(img_func.shape[0])
+    hadamard_matrix_m = hadamard(img_func.shape[1])
+    ara_basamak = np.matmul(hadamard_matrix_n, img_func)
+    return np.matmul(ara_basamak, hadamard_matrix_m)
+
+
 def visualize_fourier(img_func: np.ndarray) -> np.ndarray:
     # show fourier transform
     # Magnitude spectrum
@@ -67,71 +75,6 @@ def visualize_fourier(img_func: np.ndarray) -> np.ndarray:
     # Kowalsky enhance >:(
     ret_val = fold_image_to_center(magnitude)
     return np.log(1 + ret_val)
-
-
-def everything_fourier(image_name: str):
-    # get channel and test
-    img = read_image(INPUT_PATH + image_name)
-    final_image = np.zeros(img.shape)
-
-    red_channel = get_rgb(img, 'R', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_fast_fourier(red_channel)
-    output = visualize_fourier(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_fourier_magnitude_red"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "fourier_angle_red_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.ifftn(fouriered_image))
-    final_image[:, :, 0] = output[:, :]
-    write_image(output, OUTPUT_PATH + "reconstructed_red_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'G', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_fast_fourier(red_channel)
-    output = visualize_fourier(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_fourier_magnitude_green_"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "fourier_angle_green_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.ifftn(fouriered_image))
-    final_image[:, :, 1] = output[:, :]
-    write_image(output, OUTPUT_PATH + "reconstructed_green_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'B', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_fast_fourier(red_channel)
-    output = visualize_fourier(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_fourier_magnitude_blue_"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "fourier_angle_blue_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.ifftn(fouriered_image))
-    final_image[:, :, 2] = output[:, :]
-    write_image(output, OUTPUT_PATH + "reconstructed_blue_"+image_name)
-
-    final_image = normalize(final_image)
-    write_image(final_image, OUTPUT_PATH + "reconstructed_final_"+image_name)
 
 
 def fold_image_to_center(img_func: np.ndarray):
@@ -156,7 +99,7 @@ def zero_padding_to_square(img_func: np.ndarray):
         i = i*2
     maxh = i
     if maxh > shape[0]+1000:
-        maxh = maxh/2
+        maxh = maxh//2
 
     max_v = shape[1]
     i = 2
@@ -164,7 +107,7 @@ def zero_padding_to_square(img_func: np.ndarray):
         i = i*2
     max_v = i
     if max_v > shape[1]+1000:
-        max_v = max_v/2
+        max_v = max_v//2
     
     padded_img = np.zeros((maxh, max_v))
     for i in range(0, maxh):
@@ -201,63 +144,6 @@ def visualize_hadamard(hadamarded_img: np.ndarray) -> np.ndarray:
     return np.log(1 + magnitude)
 
 
-def everything_hadamard(image_name: str):
-    # get channel and test
-    img = read_image(INPUT_PATH + image_name)
-    original_shape = img.shape
-
-    red_channel = get_rgb(img, 'R', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = hadamard_from_image(red_channel)
-    output = visualize_hadamard(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_hadamard_magnitude_red"+image_name)
-
-    # reconstruct the image
-    output = reverse_hadamard(fouriered_image)
-    final_image = np.zeros((output.shape[0], output.shape[1], 3))
-    final_image[:, :, 0] = output[:, :]
-    write_image(output, OUTPUT_PATH + "hadamard_reconstructed_red_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'G', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = hadamard_from_image(red_channel)
-    output = visualize_hadamard(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_hadamard_magnitude_green_"+image_name)
-
-    # reconstruct the image
-    output = reverse_hadamard(fouriered_image)
-    final_image[:, :, 1] = output[:, :]
-    write_image(output, OUTPUT_PATH + "hadamard_reconstructed_green_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'B', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = hadamard_from_image(red_channel)
-    output = visualize_hadamard(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_hadamard_magnitude_blue_"+image_name)
-
-    # reconstruct the image
-    output = reverse_hadamard(fouriered_image)
-    final_image[:, :, 2] = output[:, :]
-    write_image(output, OUTPUT_PATH + "hadamard_reconstructed_blue_"+image_name)
-
-    final_image = normalize(final_image)
-    final_image = final_image[0:original_shape[0], 0:original_shape[1], :]
-    print(original_shape)
-    print(final_image.shape)
-    write_image(final_image, OUTPUT_PATH + "hadamard_reconstructed_final_"+image_name)
-
-
 def get_cosine(img_func: np.ndarray):
     # Image in Fourier domain
     return fp.dct(img_func)
@@ -271,71 +157,6 @@ def visualize_cosine(img_func: np.ndarray):
     magnitude = normalize(magnitude)
     # Kowalsky enhance >:(
     return np.log(1 + magnitude)
-
-
-def everything_cosine(image_name: str):
-    # get channel and test
-    img = read_image(INPUT_PATH + image_name)
-    final_image = np.zeros(img.shape)
-
-    red_channel = get_rgb(img, 'R', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_cosine(red_channel)
-    output = visualize_cosine(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_cosine_magnitude_red"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "cosine_angle_red_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.idct(fouriered_image))
-    final_image[:, :, 0] = output[:, :]
-    write_image(output, OUTPUT_PATH + "cosine_reconstructed_red_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'G', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_cosine(red_channel)
-    output = visualize_cosine(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_cosine_magnitude_green_"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "cosine_angle_green_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.idct(fouriered_image))
-    final_image[:, :, 1] = output[:, :]
-    write_image(output, OUTPUT_PATH + "cosine_reconstructed_green_"+image_name)
-
-    # get channel and test
-    red_channel = get_rgb(img, 'B', False)
-    # write_image(output, OUTPUT_PATH + "1_red.png")
-
-    # get fourier transformation of image
-    fouriered_image = get_cosine(red_channel)
-    output = visualize_cosine(fouriered_image)
-
-    write_image(output, OUTPUT_PATH + "folded_cosine_magnitude_blue_"+image_name)
-
-    # angle spectrum
-    angle = np.angle(fouriered_image)
-    write_image(output, OUTPUT_PATH + "cosine_angle_blue_"+image_name)
-
-    # reconstruct the image
-    output = np.real(fp.idct(fouriered_image))
-    final_image[:, :, 2] = output[:, :]
-    write_image(output, OUTPUT_PATH + "cosine_reconstructed_blue_"+image_name)
-
-    final_image = normalize(final_image)
-    write_image(final_image, OUTPUT_PATH + "cosine_reconstructed_final_"+image_name)
 
 
 def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> None:
@@ -436,73 +257,6 @@ def process_image(image_func: np.ndarray,
     return frequency_domain_to_time_domain(filtered_image)
 
 
-def exhaustive_r_search():
-    img_search = read_image(INPUT_PATH + "3.png")
-    for fil_search in ("I", "G", "B",):
-        for pas_search in ("LP", "HP"):
-            for cut_search in (1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 100):
-                final_image_search = np.zeros(img_search.shape)
-                final_image_search[:, :, 0] = \
-                    normalize(process_image(img_search, fil_search, pas_search, cut_search, "R"))
-                final_image_search[:, :, 1] = \
-                    normalize(process_image(img_search, fil_search, pas_search, cut_search, "G"))
-                final_image_search[:, :, 2] = \
-                    normalize(process_image(img_search, fil_search, pas_search, cut_search, "B"))
-                write_image(final_image_search, OUTPUT_PATH + f"{fil_search}{pas_search}_{cut_search}.png")
-                print(f"{fil_search}{pas_search}_{cut_search}")
-
-
-def exhaustive_n_search():
-    img_search = read_image(INPUT_PATH + "3.png")
-    for fil_search in ("G", "B",):
-        for pas_search in ("LP", "HP"):
-            for cut_search in (R1, R2, R3):
-                for opt in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10):
-                    final_image_search = np.zeros(img_search.shape)
-                    final_image_search[:, :, 0] = \
-                        normalize(process_image(img_search, fil_search, pas_search, cut_search, "R", opt))
-                    final_image_search[:, :, 1] = \
-                        normalize(process_image(img_search, fil_search, pas_search, cut_search, "G", opt))
-                    final_image_search[:, :, 2] = \
-                        normalize(process_image(img_search, fil_search, pas_search, cut_search, "B", opt))
-                    write_image(final_image_search, OUTPUT_PATH + f"{fil_search}{pas_search}_{cut_search}-{opt}.png")
-                    print(f"{fil_search}{pas_search}_{cut_search}-{opt}")
-
-
-def stretch_channel(image_func: np.ndarray, left: int, right: int, min_val: int, max_val: int):
-    area = right - left
-    spectrum = max_val - min_val
-    ratio = spectrum / area
-    ret_val = np.zeros(image_func.shape)
-    for x in range(image_func.shape[0]):
-        for y in range(image_func.shape[1]):
-            if left <= image_func[x, y] <= right:
-                cell = image_func[x, y]
-                cell -= left
-                cell *= ratio
-                cell += min_val
-                ret_val[x, y] = cell
-            else:
-                ret_val[x, y] = image_func[x, y]
-    return ret_val
-
-
-def stretch_image(image_func: np.ndarray, left: int, right: int, min_val: int, max_val: int):
-    area = right - left
-    spectrum = max_val - min_val
-    ratio = spectrum / area
-    ret_val = np.zeros((image_func.shape[0], image_func.shape[1], image_func.shape[2]))
-    for x in range(0, image_func.shape[0]):
-        for y in range(0, image_func.shape[1]):
-            sum_val = sum(image_func[x][y])
-            if left <= (sum_val/3) <= right:
-                ret_val[x][y] = ((image_func[x][y] - (left * (image_func[x][y] / sum_val))) * ratio) + \
-                                (min_val * (image_func[x][y] / sum_val))
-            else:
-                ret_val[x][y] = image_func[x][y]
-    return ret_val
-
-
 def power_transformation(image_func: np.ndarray, c: float, t: float):
     ret_val = np.zeros(image_func.shape)
     for x in range(image_func.shape[0]):
@@ -550,21 +304,115 @@ def histogram_equalization(img_func: np.array):
     return img_hist_eq
 
 
+def generate_band_pass_filter(size_x: int, size_y: int, r_s: float, r_l: float) -> np.ndarray:
+    return_val = np.zeros((size_x, size_y))
+    center_x = size_x/2
+    center_y = size_y/2
+    for x in range(0, size_x):
+        for y in range(0, size_y):
+            if ((math.sqrt((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y)) <= r_l) and
+                    (math.sqrt((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y)) >= r_s)):
+                return_val[x][y] = 1
+            else:
+                return_val[x][y] = 0
+    return return_val
+
+
+def generate_band_reject_filter(size_x: int, size_y: int, r_s: float, r_l: float) -> np.ndarray:
+    return_val = np.zeros((size_x, size_y))
+    center_x = size_x/2
+    center_y = size_y/2
+    for x in range(0, size_x):
+        for y in range(0, size_y):
+            if ((math.sqrt((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y)) <= r_l) and
+                    (math.sqrt((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y)) >= r_s)):
+                return_val[x][y] = 0
+            else:
+                return_val[x][y] = 1
+    return return_val
+
+
+def band_reject(image_func: np.ndarray, cut_off1: float, cut_off2: float, channel: str) -> np.ndarray:
+    transformed_image = time_domain_to_frequency(image_func, channel)
+    band_fil = generate_band_reject_filter(transformed_image.shape[0], transformed_image.shape[1], cut_off1, cut_off2)
+    filtered_image = np.multiply(transformed_image, band_fil)  # HP takes the outside LP takes the inside
+    return frequency_domain_to_time_domain(filtered_image)
+
+
+def band_pass(image_func: np.ndarray, cut_off1: float, cut_off2: float, channel: str) -> np.ndarray:
+    transformed_image = time_domain_to_frequency(image_func, channel)
+    band_fil = generate_band_pass_filter(transformed_image.shape[0], transformed_image.shape[1], cut_off1, cut_off2)
+    filtered_image = np.multiply(transformed_image, band_fil)  # HP takes the outside LP takes the inside
+    return frequency_domain_to_time_domain(filtered_image)
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
-    # takes fourier transformation of an image for every channel then reconstructs them and creates final image
-    # -> total 10 images
-    # everything_fourier("1.png")
 
-    # takes cosine transformation of an image for every channel then reconstructs them and creates final image
-    # -> total 10 images
-    # everything_cosine("1.png")
+    # Fourier Transform of 1.png
+    img = read_image(INPUT_PATH + "1.png")
+    fouriered_image = np.log(np.abs(fp.fftshift(get_fast_fourier(img))) ** 2)
+    write_image(normalize(fouriered_image), OUTPUT_PATH + "F1.png")
 
-    # takes hadamard transformation of an image for every channel then reconstructs them and creates final image
-    # -> total 10 images
-    # everything_hadamard("1.png")
+    # Fourier Transform of 2.png
+    img = read_image(INPUT_PATH + "2.png")
+    fouriered_image = np.log(np.abs(fp.fftshift(get_fast_fourier(img))) ** 2)
+    write_image(normalize(fouriered_image), OUTPUT_PATH + "F2.png")
 
+    # Hadamard Transform of 1.png
+    img = read_image(INPUT_PATH + "1.png")
+    original_shape = img.shape
+    red_channel = get_rgb(img, 'R', False)
+    hadamarded_image = hadamart_from_image(red_channel)
+    final_image = np.zeros((hadamarded_image.shape[0], hadamarded_image.shape[1], 3))
+    final_image[:, :, 0] = visualize_hadamard(hadamarded_image)[:, :]
+
+    green_channel = get_rgb(img, 'G', False)
+    hadamarded_image = hadamart_from_image(green_channel)
+    final_image[:, :, 1] = visualize_hadamard(hadamarded_image)[:, :]
+
+    blue_channel = get_rgb(img, 'B', False)
+    hadamarded_image = hadamart_from_image(blue_channel)
+    final_image[:, :, 2] = visualize_hadamard(hadamarded_image)[:, :]
+
+    final_image = normalize(final_image)
+    final_image = final_image[0:original_shape[0], 0:original_shape[1], :]
+    write_image(final_image, OUTPUT_PATH + "H1.png")
+
+    # Hadamard Transform of 2.png
+    img = read_image(INPUT_PATH + "2.png")
+    original_shape = img.shape
+    red_channel = get_rgb(img, 'R', False)
+    hadamarded_image = hadamart_from_image(red_channel)
+    final_image = np.zeros((hadamarded_image.shape[0], hadamarded_image.shape[1], 3))
+    final_image[:, :, 0] = visualize_hadamard(hadamarded_image)[:, :]
+
+    green_channel = get_rgb(img, 'G', False)
+    hadamarded_image = hadamart_from_image(green_channel)
+    final_image[:, :, 1] = visualize_hadamard(hadamarded_image)[:, :]
+
+    blue_channel = get_rgb(img, 'B', False)
+    hadamarded_image = hadamart_from_image(blue_channel)
+    final_image[:, :, 2] = visualize_hadamard(hadamarded_image)[:, :]
+
+    final_image = normalize(final_image)
+    final_image = final_image[0:original_shape[0], 0:original_shape[1], :]
+    write_image(final_image, OUTPUT_PATH + "H2.png")
+
+    # Cosine Transform of 1.png
+    img = read_image(INPUT_PATH + "1.png")
+    cosined_image = fp.dct(fp.dct(img, axis=0, norm='ortho'), axis=1, norm='ortho')
+    cosined_image = cosined_image[:200, 0:200]
+    write_image(normalize(cosined_image), OUTPUT_PATH + "C1.png")
+
+    # Cosine Transform of 2.png
+    img = read_image(INPUT_PATH + "2.png")
+    cosined_image = fp.dct(fp.dct(img, axis=0, norm='ortho'), axis=1, norm='ortho')
+    cosined_image = cosined_image[:200, 0:200]
+    write_image(normalize(cosined_image), OUTPUT_PATH + "C2.png")
+
+    # High and Low Pass Filters for 3.png
     img = read_image(INPUT_PATH + "3.png")
     for fil in ("I", "G", "B",):
         for pas in ("LP", "HP"):
@@ -575,6 +423,39 @@ if __name__ == '__main__':
                 final_image[:, :, 2] = normalize(process_image(img, fil, pas, cut, "B"))
                 write_image(final_image, OUTPUT_PATH + f"{fil}{pas}_{cut}.png")
 
+    # Band Filtering for 4.png
+    img = read_image(INPUT_PATH + "4.png")
+    final_img = np.zeros(img.shape)
+
+    final_img[:, :, 0] = normalize(band_reject(img, 80, 200, "R"))
+    final_img[:, :, 1] = normalize(band_reject(img, 80, 200, "G"))
+    final_img[:, :, 2] = normalize(band_reject(img, 80, 200, "B"))
+
+    write_image(final_img, OUTPUT_PATH + "BR1.png")
+    final_img = np.zeros(img.shape)
+    final_img[:, :, 0] = normalize(band_pass(img, 80, 200, "R"))
+    final_img[:, :, 1] = normalize(band_pass(img, 80, 200, "G"))
+    final_img[:, :, 2] = normalize(band_pass(img, 80, 200, "B"))
+
+    write_image(final_img, OUTPUT_PATH + "BP1.png")
+
+    # Band Filtering for 5.png
+    img = read_image(INPUT_PATH + "5.png")
+    final_img = np.zeros(img.shape)
+    final_img[:, :, 0] = normalize(band_reject(img, 85, 1500, "R"))
+    final_img[:, :, 1] = normalize(band_reject(img, 85, 1500, "G"))
+    final_img[:, :, 2] = normalize(band_reject(img, 85, 1500, "B"))
+
+    write_image(final_img, OUTPUT_PATH + "BR2.png")
+    final_img = np.zeros(img.shape)
+
+    final_img[:, :, 0] = normalize(band_pass(img, 85, 1500, "R"))
+    final_img[:, :, 1] = normalize(band_pass(img, 85, 1500, "G"))
+    final_img[:, :, 2] = normalize(band_pass(img, 85, 1500, "B"))
+
+    write_image(final_img, OUTPUT_PATH + "BP2.png")
+
+    # Image Enhancement for 6.png
     img = read_image(INPUT_PATH + "6.png")
     final_image = np.zeros(img.shape)
     final_image[:, :, 0] = normalize(histogram_equalization(get_rgb(img, 'R', False)))
@@ -585,6 +466,7 @@ if __name__ == '__main__':
     final_image = normalize(power_transformation(final_image, 1, pow(0.9, POW)))
     write_image(final_image, OUTPUT_PATH + f"Space6.png")
 
+    # Image Enhancement for 7.png
     img = read_image(INPUT_PATH + "7.png")
     final_image = normalize(power_transformation(img, 1, pow(0.9, POW)))
     write_image(final_image, OUTPUT_PATH + f"Space7.png")
