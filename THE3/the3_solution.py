@@ -80,6 +80,30 @@ def get_average_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int
     return r, g, b,
 
 
+def get_initial_means(color_space: list[tuple[int, int, int]], k: int) -> list[tuple[int, int, int]]:
+    ret_val = []
+    max_val = len(color_space) - 1
+    for _ in range(k):
+        ret_val.append(color_space[np.random.randint(0, max_val)])
+    return ret_val
+
+
+def get_next_means(color_space: list[tuple[int, int, int]],
+                   means: list[tuple[int, int, int]]) -> list[tuple[int, int, int]]:
+    dist_vects = []
+    groups: list[list[tuple[int, int, int]]] = []
+    ret_val = []
+    for mean in means:
+        dist_vects.append(get_distance_vector(color_space, mean))
+        groups.append([])
+    arr = np.array(dist_vects)
+    for i in range(len(color_space)):
+        groups[arr[:, i].argmax()].append(color_space[i])
+    for group in groups:
+        ret_val.append(get_average_color(group))
+    return ret_val
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
