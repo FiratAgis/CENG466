@@ -104,6 +104,23 @@ def get_next_means(color_space: list[tuple[int, int, int]],
     return ret_val
 
 
+def check_conversion(means1: list[tuple[int, int, int]], means2: list[tuple[int, int, int]]) -> bool:
+    for x in range(len(means1)):
+        if means1[x][0] != means2[x][0] or means1[x][1] != means2[x][1] or means1[x][2] != means2[x][2]:
+            return False
+    return True
+
+
+def perform_k_means(img_func: np.ndarray, k: int) -> list[tuple[int, int, int]]:
+    color_space = extract_color_space(img_func)
+    means = get_initial_means(color_space, k)
+    next_means = get_next_means(color_space, means)
+    while not check_conversion(means, next_means):
+        means = next_means
+        next_means = get_next_means(color_space, means)
+    return means
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
