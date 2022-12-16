@@ -3,7 +3,7 @@ Submission by
 Fırat Ağış, e2236867
 Robin Koç, e246871
 """
-
+import math
 import os
 import numpy as np
 import matplotlib.image
@@ -42,6 +42,42 @@ def normalize(arr: np.ndarray) -> np.ndarray:
     max_val = arr.max()
     min_val = arr.min()
     return (arr - min_val) * (254 / (max_val - min_val))
+
+
+def extract_color_space(img_func: np.ndarray) -> list[tuple[int, int, int]]:
+    ret_val = []
+    for row in img_func:
+        for cell in row:
+            if (cell[0], cell[1], cell[2]) not in ret_val:
+                ret_val.append((cell[0], cell[1], cell[2]))
+    return ret_val
+
+
+def get_distance(color1: tuple[int, int, int], color2: tuple[int, int, int]) -> float:
+    return math.sqrt(pow(float(color1[0] - color2[0]), 2) +
+                     pow(float(color1[1] - color2[1]), 2) +
+                     pow(float(color1[2] - color2[2]), 2))
+
+
+def get_distance_vector(color_space: list[tuple[int, int, int]], color: tuple[int, int, int]) -> np.ndarray:
+    ret_val = np.zeros(len(color_space))
+    for i in range(len(color_space)):
+        ret_val[i] = get_distance(color_space[i], color)
+    return ret_val
+
+
+def get_average_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
+    r = 0
+    g = 0
+    b = 0
+    for color in colors:
+        r += color[0]
+        g += color[1]
+        b += color[2]
+    r = r//len(colors)
+    g = g // len(colors)
+    b = b // len(colors)
+    return r, g, b,
 
 
 if __name__ == '__main__':
