@@ -62,7 +62,7 @@ def extract_color_space(img_func: np.ndarray) -> list[tuple[int, int, int]]:
     ret_val = []
     for row in img_func:
         for cell in row:
-            if ((int(cell[0]), int(cell[1]), int(cell[2])) not in ret_val) and (int(cell[0]) != 0 or int(cell[1]) != 0 or int(cell[2]) != 0):
+            if (int(cell[0]), int(cell[1]), int(cell[2])) not in ret_val:
                 ret_val.append((int(cell[0]), int(cell[1]), int(cell[2])))
     return ret_val
 
@@ -143,19 +143,25 @@ def group_by_mean(color_space: list[tuple[int, int, int]],
     return groups
 
 
-def color_image_by_groups(img_func: np.ndarray, groups: list[list[tuple[int, int, int]]]) -> np.ndarray:
+def color_image_by_groups(img_func: np.ndarray, groups: list[list[tuple[int, int, int]]],
+                  black_non_rgb: bool = False) -> np.ndarray:
     ret_val = np.zeros(img_func.shape)
     for x in range(img_func.shape[0]):
         for y in range(img_func.shape[1]):
             color = (int(img_func[x][y][0]), int(img_func[x][y][1]), int(img_func[x][y][2]),)
-            for i in range(len(groups)):
-                if color in groups[i]:
-                    ret_val[x][y][0] = COLOR_CONSTANTS[i][0]
-                    ret_val[x][y][1] = COLOR_CONSTANTS[i][1]
-                    ret_val[x][y][2] = COLOR_CONSTANTS[i][2]
-                    if img_func.shape[2] == 4:
-                        ret_val[x][y][3] = 255
-                    break
+            if img_func.shape[2] == 4:
+                ret_val[x][y][3] = 255
+            if black_non_rgb and not (color[0] > color[1] and color[0] > color[2]):
+                ret_val[x][y][0] = 0
+                ret_val[x][y][1] = 0
+                ret_val[x][y][2] = 0
+            else:
+                for i in range(len(groups)):
+                    if color in groups[i]:
+                        ret_val[x][y][0] = COLOR_CONSTANTS[i][0]
+                        ret_val[x][y][1] = COLOR_CONSTANTS[i][1]
+                        ret_val[x][y][2] = COLOR_CONSTANTS[i][2]
+                        break
     return ret_val
 
 
@@ -177,47 +183,264 @@ def down_sample_image(img_func: np.ndarray, x_fact: int, y_fact: int) -> np.ndar
     return ret_val
 
 
-def get_rgb_pixels(img_func: np.ndarray) -> np.ndarray:
-    ret_val = np.zeros(img_func.shape)
-    for x in range(img_func.shape[0]):
-        for y in range(img_func.shape[1]):
-            cell = img_func[x][y]
-            if cell[0] > cell[1] > cell[2]:
-                ret_val[x][y] = cell
+def extract_histogram(img_func: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    for x in img_func:
+        for y in x:
+            ret_val[int(y)] = ret_val[int(y)] + 1
     return ret_val
 
+
+def create_cum_histogram(histogram: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros(256)
+    ret_val[0] = histogram[0]
+    for x in range(1, 256):
+        ret_val[x] = ret_val[x - 1] + histogram[x]
+    return ret_val
+
+
+def histogram_equalization(img_func: np.ndarray) -> np.ndarray:
+    shape = img_func.shape
+    img_hist_eq = np.zeros(shape, dtype=np.uint)
+    histogram = extract_histogram(img_func)
+    cum = create_cum_histogram(histogram)
+    size = float(shape[0] * shape[1])
+    coefficient = 255.0 / size
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            img_hist_eq[x][y] = math.floor(coefficient * cum[img_func[x][y]])
+    return img_hist_eq
+
+
+def get_rgb(img_func: np.ndarray, channel: str, full_image: bool = True) -> np.ndarray:
+    if channel == 'R':
+        if full_image:
+            return_val = np.zeros(img_func.shape)
+            return_val[:, :, 0] = img_func[:, :, 0]
+            return return_val
+        else:
+            return img_func[:, :, 0]
+    if channel == 'G':
+        if full_image:
+            return_val = np.zeros(img_func.shape)
+            return_val[:, :, 1] = img_func[:, :, 1]
+            return return_val
+        else:
+            return img_func[:, :, 1]
+    if channel == 'B':
+        if full_image:
+            return_val = np.zeros(img_func.shape)
+            return_val[:, :, 2] = img_func[:, :, 2]
+            return return_val
+        else:
+            return img_func[:, :, 2]
+
+
+def get_equal_image(img_func: np.ndarray) -> np.ndarray:
+    final_image = np.zeros(img_func.shape)
+    final_image[:, :, 0] = normalize(histogram_equalization(get_rgb(img_func, 'R', False)))
+    final_image[:, :, 1] = normalize(histogram_equalization(get_rgb(img_func, 'G', False)))
+    final_image[:, :, 2] = normalize(histogram_equalization(get_rgb(img_func, 'B', False)))
+    if img_func.shape[2] == 4:
+        final_image[:, :, 3] = 255
+    return  final_image
+
+
+def erode_image(img_func: np.ndarray, degree: int = 1) -> np.ndarray:
+    if degree == 0:
+        return img_func
+    final_image = np.zeros(img_func.shape)
+    for x in range(1, img_func.shape[0] - 1):
+        for y in range(1, img_func.shape[1] -1):
+            if (img_func[x-1][y-1][0] > 40 and img_func[x][y-1][0] > 40 and img_func[x+1][y-1][0] > 40 and
+                img_func[x-1][y][0] > 40 and img_func[x][y][0] > 40 and img_func[x+1][y][0] > 40 and
+                img_func[x-1][y+1][0] > 40 and img_func[x][y+1][0] > 40 and img_func[x+1][y+1][0] > 40):
+                final_image[x][y][0] = 255
+                final_image[x][y][1] = 255
+                final_image[x][y][2] = 255
+            if img_func.shape[2] == 4:
+                final_image[x][y][3] = 255
+    return erode_image(final_image, degree - 1)
+
+def dilute_image(img_func: np.ndarray, degree: int = 1) -> np.ndarray:
+    if degree == 0:
+        return img_func
+    final_image = np.zeros(img_func.shape)
+    for x in range(1, img_func.shape[0] - 1):
+        for y in range(1, img_func.shape[1] -1):
+            if (img_func[x-1][y-1][0] > 40 or img_func[x][y-1][0] > 40 or img_func[x+1][y-1][0] > 40 or
+                img_func[x-1][y][0] > 40 or img_func[x][y][0] > 40 or img_func[x+1][y][0] > 40 or
+                img_func[x-1][y+1][0] > 40 or img_func[x][y+1][0] > 40 or img_func[x+1][y+1][0] > 40):
+                final_image[x][y][0] = 255
+                final_image[x][y][1] = 255
+                final_image[x][y][2] = 255
+            if img_func.shape[2] == 4:
+                final_image[x][y][3] = 255
+    return dilute_image(final_image, degree - 1)
+
+
+def open_image(img_func: np.ndarray, degree: int = 1):
+    ret_val = erode_image(img_func, degree)
+    ret_val = dilute_image(ret_val, degree)
+    return  ret_val
+
+
+def close_image(img_func: np.ndarray, degree: int = 1):
+    ret_val = dilute_image(img_func, degree)
+    ret_val = erode_image(ret_val, degree)
+    return  ret_val
+
+
+def frame_cull(img_func: np.ndarray, factor_x: float, factor_y: float) -> np.ndarray:
+    ret_val = np.array(img_func)
+    for x in range(img_func.shape[0]):
+        for y in range(img_func.shape[1]):
+            if (x < (img_func.shape[0] * factor_x) or
+                x > (img_func.shape[0] * (1- factor_x)) or
+                y < (img_func.shape[1] * factor_y) or
+                y > (img_func.shape[1] * (1-factor_y))):
+                ret_val[x][y][0] = 0
+                ret_val[x][y][1] = 0
+                ret_val[x][y][2] = 0
+    return ret_val
+
+
+def convolve2D(image, kernel, padding_x = 1, padding_y = 1):
+    # Cross Correlation
+    kernel = np.flipud(np.fliplr(kernel))
+
+    # Gather Shapes of Kernel + Image + Padding
+    xKernShape = kernel.shape[0]
+    yKernShape = kernel.shape[1]
+    xImgShape = image.shape[0]
+    yImgShape = image.shape[1]
+
+    # Shape of Output Convolution
+    xOutput = int((xImgShape - xKernShape + 2 * padding_x))
+    yOutput = int((yImgShape - yKernShape + 2 * padding_y))
+    output = np.zeros((xOutput, yOutput))
+
+    # Apply Equal Padding to All Sides
+    imagePadded = np.zeros((xImgShape + padding_x * 2, yImgShape + padding_y * 2))
+    imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = image
+
+    # Iterate through image
+    for y in range(yImgShape):
+        # Exit Convolution
+        if y > yImgShape - yKernShape:
+            break
+        # Only Convolve if y has gone down by the specified Strides
+        for x in range(xImgShape):
+            # Go to next row once kernel is out of bounds
+            if x > xImgShape - xKernShape:
+                break
+            try:
+                output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
+            except:
+                break
+
+    return output
+
+
+def binarize_image(img_func: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros((img_func.shape[0], img_func.shape[1]))
+    for x in range(img_func.shape[0]):
+        for y in range(img_func.shape[1]):
+            if img_func[x][y][0] > 40:
+                ret_val[x][y] = 1
+    return ret_val
+
+
+def get_ellipse_mask(x_length: int, y_length: int) -> np.ndarray:
+    ret_val = np.zeros((x_length * 2, y_length *2 ))
+    for x in range(x_length * 2):
+        for y in range(y_length * 2):
+            if (pow(x-x_length, 2)/pow(x_length,2)) + (pow(y-y_length, 2)/pow(y_length,2)) <= 1:
+                ret_val[x][y] = 1
+    return ret_val
+
+
+def apply_convolution_result(img_func: np.ndarray, x_length: int, y_length: int, dim: int) -> np.ndarray:
+    ret_val = np.zeros((img_func.shape[0], img_func.shape[1], dim))
+    cut_off = x_length * y_length
+    for x in range(img_func.shape[0]):
+        for y in range(img_func.shape[1]):
+            if img_func[x][y] >= cut_off:
+                for x1 in range(img_func.shape[0]):
+                    for y1 in range(img_func.shape[1]):
+                        if ret_val[x1][y1][0] == 0:
+                            if abs(x1 - x) < x_length and abs(y1 - y) < y_length:
+                                if (pow(x1-x, 2)/pow(x_length,2)) + (pow(y1-y, 2)/pow(y_length,2)) <= 1:
+                                    for index in range(dim):
+                                        ret_val[x1][y1][index] = 1
+    return ret_val
+
+def detect_faces(input_name: str,
+                 output_name: str,
+                 means_no: int,
+                 equalize: bool = True,
+                 factor_x: int = 1,
+                 factor_y: int = 1,
+                 bit_slice: int = 1,
+                 red_mask: bool = True,
+                 cull_factor_x: float = 0.1,
+                 cull_factor_y: float = 0.1,
+                 open_amount: int = 2,
+                 close_amount: int = 2,
+                 mask_x: int = 20,
+                 mask_y: int = 15,
+                 print_intermediate: bool = False):
+    img_func = read_image(f"{INPUT_PATH}{input_name}.png")
+    if equalize:
+        img_func = get_equal_image(img_func)
+        if print_intermediate:
+            write_image(img_func, f"{OUTPUT_PATH}{output_name}_equalized.png")
+    if factor_x > 1 or factor_y > 1:
+        img_func = down_sample_image(img_func, factor_x, factor_y)
+        if print_intermediate:
+            write_image(img_func, f"{OUTPUT_PATH}{output_name}_down_sampled.png")
+    if bit_slice > 0:
+        img_func = img_func / pow(2, bit_slice)
+        if print_intermediate:
+            write_image(img_func, f"{OUTPUT_PATH}{output_name}_sliced.png")
+    color_space = extract_color_space(img_func)
+    image_means = perform_k_means(color_space, means_no)
+    image_groups = group_by_mean(color_space, image_means)
+    red_group = 0
+    for index in range(len(image_means)):
+        if image_means[index][0] > image_means[red_group][0]:
+            red_group = index
+    img_func = color_image_by_groups(img_func, [image_groups[red_group]], red_mask)
+    if print_intermediate:
+        write_image(img_func, f"{OUTPUT_PATH}{output_name}_k_means.png")
+
+    img_func = frame_cull(img_func, cull_factor_x, cull_factor_y)
+    if print_intermediate:
+        write_image(img_func, f"{OUTPUT_PATH}{output_name}_culled_{cull_factor_x}_{cull_factor_y}.png")
+
+    img_func = open_image(img_func, open_amount)
+    if print_intermediate:
+        write_image(img_func, f"{OUTPUT_PATH}{output_name}_opened_{open_amount}.png")
+
+    img_func = close_image(img_func, close_amount)
+    if print_intermediate:
+        write_image(img_func, f"{OUTPUT_PATH}{output_name}_closed_{close_amount}.png")
+
+    img_func = convolve2D(binarize_image(img_func), get_ellipse_mask(mask_x, mask_y), mask_x, mask_y)
+    if print_intermediate:
+        write_image(normalize(img_func), f"{OUTPUT_PATH}{output_name}_convolution.png")
+
+    original = read_image(f"{INPUT_PATH}{input_name}.png")
+    if factor_x > 1 or factor_y > 1:
+        original = down_sample_image(original, factor_x, factor_y)
+
+    img_func = original * apply_convolution_result(img_func, 20, 15, original.shape[2])
+    write_image(img_func, f"{OUTPUT_PATH}{output_name}.png")
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
 
-    img = read_image(INPUT_PATH + "1_source.png")
-    img = get_rgb_pixels(img)
-    img = img / 2
-    col_space = extract_color_space(img)
-    for k_val in range(4, 15):
-        img_means = perform_k_means(col_space, k_val)
-        img_groups = group_by_mean(col_space, img_means)
-        output_image = color_image_by_groups(img, img_groups)
-        write_image(output_image, OUTPUT_PATH + f"1_faces_{k_val}.png")
-
-    img = read_image(INPUT_PATH + "2_source.png")
-    image_sampled = down_sample_image(img, 9, 9)
-    image_sampled = get_rgb_pixels(image_sampled)
-    image_sampled = image_sampled / 2
-    col_space = extract_color_space(image_sampled)
-    for k_val in range(4, 15):
-        img_means = perform_k_means(col_space, k_val)
-        img_groups = group_by_mean(col_space, img_means)
-        output_image = color_image_by_groups(image_sampled, img_groups)
-        write_image(output_image, OUTPUT_PATH + f"2_faces_{k_val}.png")
-
-    img = read_image(INPUT_PATH + "3_source.png")
-    img = get_rgb_pixels(img)
-    img = img / 2
-    col_space = extract_color_space(img)
-    for k_val in range(4, 15):
-        img_means = perform_k_means(col_space, k_val)
-        img_groups = group_by_mean(col_space, img_means)
-        output_image = color_image_by_groups(img, img_groups)
-        write_image(output_image, OUTPUT_PATH + f"3_faces_{k_val}.png")
+    """detect_faces("1_source", "1_faces", 6)"""
+    detect_faces("2_source", "2_faces", 4, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001)
+    """detect_faces("3_source", "3_faces", 6)"""
