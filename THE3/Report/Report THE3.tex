@@ -39,12 +39,30 @@ e2468718@ceng.metu.edu.tr}
 \end{IEEEkeywords}
 
 \section{Face Detection}
-
+For face detection, we propose an algorithm that use k-means to separate color groups, chooses the color group that is most likely to include skin colors and then uses morphological operations and convolution operation to detect areas that are most likely to include faces in the image. Our algorithm posses 3 distinct stages:
+\begin{enumerate}
+	\item \textit{Preprocessing:} Process the image to be more suitable for our algorithm and performs some processes to make the algorithm run a lot faster.
+	\item \textit{K-Means:} Using k-means algorithm with randomized starting means to detect the pixels that are most likely to be in the color of skin tones.
+	\item \textit{Context Based Postprocessing:} Using morphological operations and convolution operation to detect which clusters of the pixels that are found in the previous step to be the part of a face.
+\end{enumerate}
 \subsection{Preprocessing}
-
+\begin{enumerate}
+	\item We first read the relevant image.
+	\item (Optional) We perform histogram equalization to differentiate skin tones from similar colors in the image, most notably, the leaves in the 1\_source.png and shirt and hair in 3\_sources.png. 
+	\item (Optional) We down-sampled the 2\_source.png by a factor of 9 in order to complete the algorithm in a reasonable time. 
+	\item We bit-sliced all images, eliminating the least significant bit. Colors that are differentiated by a single bit are most likely to be in the same color group, meaning this operation affected the quality of the k-means algorithm minimally while reduicing the size of the color space by a factor of $2^3=8$.
+\end{enumerate}
 \subsection{K-Means}
 
 \subsection{Context Based Postprocessing}
+\begin{enumerate}
+	\item (Optional) While processing 1\_source.png and 3\_sources.png, we used the assumption of faces being the central focus of images to eliminate pixels on the outer parts of the image.
+	\item We used opening operation with a 5x5 element to eliminate noise from the image.
+	\item We used closing operation with a 5x5 element to fix regions that are broken up during the previous step.
+	\item We used convolution with a elliptical mask, mimicking the shape of he face to determine locations where a face may lie.
+	\item We used thresholding to the result of the convolution, including the parts of the image that passed the tresholding, concluding the algorithm.
+\end{enumerate}
+\subsection{Results}
 
 \section{Pseudo-coloring}
 
