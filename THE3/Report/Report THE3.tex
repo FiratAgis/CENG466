@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{float}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -97,6 +98,176 @@ Morphological operations didn't eliminated all non-face regions. To distinguish 
     \label{fig:end}
 \end{figure}
 \section{Pseudo-coloring}
+\subsection{Coloring Grayscale Images}
+In a grayscale image we have 256 discrete values for every pixel that represent how much black or how much white the pixel is. 0 being black pixel and 256 being white pixel. In a multichannel image we have values ranging from 0 to 256 for every channel which are red, green and blue for rgb images. Now what we need is a function or set that maps gray values in given grayscale images to rgb values in the given source images. We know that our map should be one to one and need to take values between 0 and 256 and should give a 3 number ranging between 0 to 256 that represents the red green and blue values. For this we had couple of steps:
+\begin{enumerate}
+    \item Creating a palette
+    \item Processing the palette
+    \item Mapping the grayscale image
+\end{enumerate}
+
+To create a map for grayscale values to rgb values we need to first find corresponding gray values for each rgb value trio. We can use different equations for this, we can take the average of the channels, we can take minimum or maximum of the channels, we can take weighted averages etc. The goal is to create a single value between 0 and 256 from three values that are rgb. We thought logical way for this would be using the luminance. Normally when we look at an image we will probably say that the darker colors must be represented by darker gray values and lighter one by the lighter gray values but since the human visual system does not correspond to the rgb color system we can not just say bigger rgb values would be lighter. Closest to human visual system would be using the luminance, to compute luminance we can take the weighted average of the rgb values with the weights (0.2989, 0.5870, 0.1140). This values are used in many systems for computing the luminance. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_source.png}
+    \caption{Source image to use rgb values from}
+    \label{fig:image_4_source}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4.png}
+    \caption{We can guess that the lightest value would represent the color yellow in the picture}
+    \label{fig:image_4_gray}
+\end{figure}
+
+
+\subsection{Extracting Palette from RGB Image}
+To extract a palette we created an empty palette with 0 value then we computed the luminance values from red green and blue values of source image and used them as indexes. Luminance values would represent the index of the palette and the palette would hold the rgb value the index created from like, palette[luminance] = (red, green, blue). This gave us a rather empty looking palette. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_palette.png}
+    \caption{Unprocessed palette}
+    \label{fig:image_4_palette}
+\end{figure}
+
+\subsection{Processing the Palette}
+Now the gray values from the image may not correspond to the non-zero luminance values from the palette for this we thought of filling zeros of the palette with the weighted average of the two closest non-zero values of it using spatial distances. The result was continuous looking palette with every grayscale value corresponding to a rgb value where black values were still black and white values were still white.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_filled_palette.png}
+    \caption{Filled palette}
+    \label{fig:image_4_filled_palette}
+\end{figure}
+
+\subsection{Using Palette to Color Grayscale Images}
+Now the easy part was using the grayscale values as indexes of palette and mapping those rgb values to the image for coloring like, colored\_image = palette[gray\_scale\_images\_values]. Results was really good for some images and good enough for some others.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_colored.png}
+    \caption{Colored version of image 4}
+    \label{fig:image_4_colored}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3.jpg}
+    \caption{Grayscale image 3}
+    \label{fig:image_4_colored}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_source.png}
+    \caption{Source image for image 3}
+    \label{fig:image_4_colored}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_filled_palette.png}
+    \caption{Processed palette from source 3}
+    \label{fig:image_4_colored}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_colored.jpg}
+    \caption{Colored version of image 3}
+    \label{fig:image_4_colored}
+\end{figure}
+
+We can see that our coloring algorithm does a bit of averaging but since these are a bit washed out old photos we are colorizing this was an expected result for us.
+
+\subsection{Rgb, Hsi and Histograms}
+We have different color systems for different purposes and usage areas, two of them we used in this homework are hsi and rgb. Hsi color space has three components named hue, saturation and intensity. These can be summarized as hue is which color are we using, saturation is  degree of how much gray the color contains (sharper or washed out colors) and intensity is about brightness. We can convert values from these color systems to each other with 3 particular equations. Since these are just representations and we can convert from one of them to the other we do not lose information but they tend to give us advantages over the others in some application areas. For example the hsi color space is modeled after human visual system and easier to associate with how we see the colors. 
+
+We can extract the histograms from a hsi image just as same as rgb one. We have different curves plotted in same histogram for red, green and blue channel in one and same for hue, saturation and intensity in the others. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_rgb_histogram.png}
+    \caption{Rgb histogram of colored image 4}
+    \label{fig:image_4_rgb_histogram}
+\end{figure}
+
+We can see that there are a lot of 0 values in many of the buckets in histogram, this is due to the low number of color variation in the image 4 (5 different colors i particular). Same thing goes for the hsi histogram.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/4_hsi_histogram.png}
+    \caption{Hsi histogram of colored image 4}
+    \label{fig:image_4_rgb_histogram}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_rgb_histogram.png}
+    \caption{Rgb histogram of colored image 3}
+    \label{fig:image_3_rgb_histogram}
+\end{figure}
+
+We can see that the intensity curve is more ranged than the hue and saturation. This is because intensity channel acts as almost a mapping to a grayscale image and contains most of the information in the image. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_hsi_histogram.png}
+    \caption{Hsi histogram of colored image 3}
+    \label{fig:image_3_rgb_histogram}
+\end{figure}
+
+\subsection{Edge Detection in RGB and HSI}
+In this homework we were tasked with detecting edges from the images using gradient filters. For this purpose we used Sobel filters. We have two Sobel filters for horizontal edges and vertical edges named $Sobel_h$  and $Sobel_v$. Convoluting these filters gives us two different edges maps for horizontal and vertical edges. And combining these two will give us all the edges since every edge is made of vertical and horizontal components. We can do this in both rgb and hsi color space. 
+
+$Sobel_h$:  
+$\begin{bmatrix}
+-1 & 0 & 1\\
+-2 & 0 & 2\\
+-1 & 0 & 1
+\end{bmatrix}$
+$Sobel_v$:  
+$\begin{bmatrix}
+-1 & -2 & -1\\
+0 & 0 & 0\\
+1 & 2 & 1
+\end{bmatrix}$
+
+
+To do this we can find edges for red, blue and green channels and add them all to get the complete edge map.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/1_rgb_colored_edges.png}
+    \caption{Edge map of image 1 in rgb color space}
+    \label{fig:image_1_rgb_edges}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_rgb_colored_edges.png}
+    \caption{Edge map of image 3 in rgb color space}
+    \label{fig:image_3_rgb_edges}
+\end{figure}
+
+To do this edge detecting method in hsi color space we almost only need the intensity channel. As we said the intensity channel of the hsi color space contains most of the information in the image. We tried using only the intensity channel for the edge detection and got results identical to the human eye.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/1_hsi_colored_edges.png}
+    \caption{Edge map of image 1 in hsi color space}
+    \label{fig:image_1_hsi_edges}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{resources/3_hsi_colored_edges.png}
+    \caption{Edge map of image 3 in hsi color space}
+    \label{fig:image_3_hsi_edges}
+\end{figure}
 
 \section{Dependencies}
 We used following libraries for the described reasons.
