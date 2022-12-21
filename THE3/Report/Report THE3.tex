@@ -46,15 +46,9 @@ For face detection, we propose an algorithm that use k-means to separate color g
 	\item \textit{Context Based Postprocessing:} Using morphological operations and convolution operation to detect which clusters of the pixels that are found in the previous step to be the part of a face.
 \end{enumerate}
 \subsection{Preprocessing}
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.4\textwidth]{resources/non-equal vs equal.jpg}
-    \caption{Difference in final results, on left, without histogram equalization and on right, with histogram equalization}
-    \label{fig:equal}
-\end{figure}
 \begin{enumerate}
 	\item \label{step:A1} We first read the relevant image. Shown in Row 1 of Figure \ref{fig:pro1}.
-	\item \label{step:A2} (Optional) We perform histogram equalization to differentiate skin tones from similar colors in the image, most notably, the leaves in the 1\_source.png and shirt and hair in 3\_sources.png. Its effectiveness in demonstrated in Figure \ref{fig:equal}. Shown in Row 2 of Figure \ref{fig:pro1}.
+	\item \label{step:A2} (Optional) We perform histogram equalization to differentiate skin tones from similar colors in the image, most notably, the leaves in the 1\_source.png and shirt and hair in 3\_sources.png. Shown in Row 2 of Figure \ref{fig:pro1}.
 	\item \label{step:A3} (Optional) We down-sampled the 2\_source.png by a factor of 9 in order to complete the algorithm in a reasonable time. 
 	\item \label{step:A4} We bit-sliced all images, eliminating the least significant bit. Colors that are differentiated by a single bit are most likely to be in the same color group, meaning this operation affected the quality of the k-means algorithm minimally while reducing the size of the color space by a factor of $2^3=8$. Shown in Row 3 of Figure \ref{fig:pro1}.
 \end{enumerate}
@@ -90,7 +84,7 @@ After the implementation of basic k-means algorithm, execution time of the algor
 
 Then we looked at commonalities between regions that make up the face, which brought us the reasoning we used in the k-means steps \ref{step:B2} and \ref{step:B3}.
 
-After that, we experimented with histogram equalization to differentiate colors easier, giving us the results demonstrated in Figure \ref{fig:equal} in the final product.
+After that, we experimented with histogram equalization to differentiate colors easier.
 
 When we arrived at the final result of k-means, given in Row 4 of Figure \ref{fig:pro1}, we determined the noise created by similarly colored regions to be a problem. To solve it, we implemented opening and closing mentioned in the postprocessing steps \ref{step:C2} and \ref{step:C3}. For the noise not eliminated by these steps, around the edge of the image for 1\_source.png, we implemented the postprocessing step \ref{step:C1}.
 
