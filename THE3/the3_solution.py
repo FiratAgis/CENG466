@@ -7,6 +7,7 @@ import math
 import os
 import numpy as np
 import matplotlib.image
+import matplotlib.pyplot as plt
 from PIL import Image
 
 
@@ -427,6 +428,260 @@ def detect_faces(input_name: str,
     img_func = original * apply_convolution_result(img_func, mask_x, mask_y, original.shape[2])
     write_image(img_func, f"{OUTPUT_PATH}{output_name}.png")
 
+
+    #give the source image
+def create_palette(img_func: np.ndarray, wr: int = 0.3, wg: int = 0.6, wb: int = 0.1) -> np.ndarray:
+    shape = img_func.shape
+    palette = np.zeros((256, 3))
+    weights = np.multiply([wr,wg,wb], 1/((wr+wg+wb)))
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            index = int(img_func[x][y][0] * weights[0] + img_func[x][y][1] * weights[1] + img_func[x][y][2] * weights[2])
+            palette[index][0] = img_func[x][y][0]
+            palette[index][1] = img_func[x][y][1]
+            palette[index][2] = img_func[x][y][2]
+    return palette
+
+#give palette to complete it
+def fill_palette(palette: np.ndarray) -> np.ndarray:
+    indexes = []
+    filled_palette = np.zeros((256, 3))
+    for i in range(256):
+        if palette[i][0] != 0 or palette[i][1] != 0 or palette[i][2] != 0:
+            indexes = indexes + [i]
+
+    l = len(indexes)
+
+    for i in range(indexes[0]):
+        filled_palette[i] = i*(palette[indexes[0]]/indexes[0])
+
+    difference = [256,256,256] - palette[indexes[l-1]]
+    for i in range(indexes[l-1], 256):
+        filled_palette[i] = palette[indexes[l-1]] + ((i-indexes[l-1])*difference)/(256-indexes[l-1])
+    
+    for i in range(l-1):
+        difference = palette[indexes[i+1]] - palette[indexes[i]]
+        for j in range(indexes[i], indexes[i+1]):
+            filled_palette[j] = palette[indexes[i]] + ((j-indexes[i])*difference)/(indexes[i+1]-indexes[i])
+    
+    filled_palette[filled_palette<0] = 0
+    filled_palette[filled_palette>255] = 255
+
+    return filled_palette
+
+def new_fill_palette(palette: np.ndarray) -> np.ndarray:
+    indexes = []
+    filled_palette = np.zeros((256, 3))
+    for i in range(256):
+        if palette[i][0] != 0 or palette[i][1] != 0 or palette[i][2] != 0:
+            indexes = indexes + [i]
+
+    l = len(indexes)
+
+    for i in range(256):
+        if palette[i][0] == 0 and palette[i][1] == 0 and palette[i][2] == 0:
+            w_total = 0
+            for j in range(l):
+                if indexes[j] != i:
+                    w = 1/(abs(indexes[j]-i))
+                    w_total += w
+                    filled_palette[i] += palette[indexes[j]]*w
+            filled_palette[i] /= w_total
+        else:
+            filled_palette[i] = palette[i]
+    return filled_palette
+
+#use palette to map the grayscale values to rgb
+def map_with_palette(gray_img: np.ndarray, palette: np.ndarray) -> np.ndarray:
+    shape = gray_img.shape
+    colored_img = np.zeros((shape[0], shape[1], 3))
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            colored_img[x][y][0] = palette[int(gray_img[x][y])][0]
+            colored_img[x][y][1] = palette[int(gray_img[x][y])][1]
+            colored_img[x][y][2] = palette[int(gray_img[x][y])][2]
+    return colored_img
+
+
+def visualize_palette(palette: np.ndarray) -> np.ndarray:
+    shape = (256, 256, 3)
+    colored_img = np.zeros(shape)
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            colored_img[x][y][0] = palette[y][0]
+            colored_img[x][y][1] = palette[y][1]
+            colored_img[x][y][2] = palette[y][2]
+    return colored_img
+
+
+def color_images(i: int):
+    print("coloring image: ", str(i) + ".png")
+    #read image and the source
+    img = read_image(INPUT_PATH + str(i) + ".png")
+    source = read_image(INPUT_PATH + str(i) + "_source.png")
+    
+    #create palette and visualize it
+    print("creating palette")
+    palette = create_palette(source, 0.2989, 0.5870, 0.1140)
+    write_image(visualize_palette(palette), OUTPUT_PATH + str(i) + "_palette.png")
+    print("filling palette")
+    palette = fill_palette(palette)
+    write_image(visualize_palette(palette), OUTPUT_PATH + str(i) + "_filled_palette.png")
+
+    print("mapping colors")
+    #create colored image and write it
+    colored_img = map_with_palette(img, palette)
+    write_image(colored_img, OUTPUT_PATH + str(i) + "_colored.png")
+
+
+def get_rgb_historgram(i: int):
+    print("getting rgb histogram: ", str(i) + ".png")
+    img = read_image(OUTPUT_PATH + str(i) + "_colored.png")
+    red_channel = img[:,:,0].flatten()
+    green_channel = img[:,:,1].flatten()
+    blue_channel = img[:,:,2].flatten()
+    
+    bins = np.linspace(0, 255, 256)
+
+    plt.hist(red_channel, bins, alpha=0.5, label='red')
+    plt.hist(green_channel, bins, alpha=0.5, label='green')
+    plt.hist(blue_channel, bins, alpha=0.5, label='blue')
+    plt.legend(loc='upper right')
+    plt.savefig(OUTPUT_PATH + str(i) + "_rgb_histogram.png")
+    plt.clf()
+
+
+def get_hsi_histogram(i: int):
+    print("getting hsi histogram: ", str(i) + ".png")
+    img = read_image(OUTPUT_PATH + str(i) + "_colored.png")
+    red_channel = img[:,:,0]
+    green_channel = img[:,:,1]
+    blue_channel = img[:,:,2]
+    
+    h_channel = (1/2) * ((red_channel - green_channel) + (red_channel - blue_channel)) / (np.sqrt((red_channel - green_channel)**2 + (red_channel - blue_channel) * (green_channel - blue_channel)))
+    #if a value in h_channel is more than 1 or less than -1, set it to 1 or -1
+    h_channel = np.where(h_channel > 1, 1, h_channel)
+    h_channel = np.where(h_channel < -1, -1, h_channel)
+    h_channel = np.arccos(h_channel)
+    h_channel = np.nan_to_num(h_channel)
+
+    for x in range(0, h_channel.shape[0]):
+        for y in range(0, h_channel.shape[1]):
+            if blue_channel[x][y] <= green_channel[x][y]:
+                h_channel[x][y] = h_channel[x][y]
+            else:
+                h_channel[x][y] = 2 * np.pi - h_channel[x][y]
+
+    s_channel = 1 - (3 / (red_channel + green_channel + blue_channel + 0.000001)) * np.minimum(np.minimum(red_channel, green_channel), blue_channel)
+    i_channel = np.multiply((1/3), (red_channel + green_channel + blue_channel))
+
+    h_channel = h_channel.flatten()
+    s_channel = s_channel.flatten()
+    i_channel = i_channel.flatten()
+
+    bins = np.linspace(0, 255, 256)
+
+    plt.hist(h_channel, bins, alpha=0.5, label='h')
+    plt.hist(s_channel, bins, alpha=0.5, label='s')
+    plt.hist(i_channel, bins, alpha=0.5, label='i')
+    plt.legend(loc='upper right')
+    plt.savefig(OUTPUT_PATH + str(i) + "_hsi_histogram.png")
+    plt.clf()
+
+
+def zero_padd(img_func: np.ndarray, i: int, rgb: bool = True) -> np.ndarray:
+    shape = img_func.shape
+    if rgb:
+        return_val = np.zeros((shape[0] + 2*i, shape[1] + 2*i, 3))
+        for x in range(i, shape[0] + i):
+            for y in range(i, shape[1] + i):
+                return_val[x][y][0] = img_func[x - i][y - i][0]
+                return_val[x][y][1] = img_func[x - i][y - i][1]
+                return_val[x][y][2] = img_func[x - i][y - i][2]
+        return return_val
+    else:
+        return_val = np.zeros((shape[0] + 2*i, shape[1] + 2*i))
+        for x in range(i, shape[0] + i):
+            for y in range(i, shape[1] + i):
+                return_val[x][y] = img_func[x - i][y - i]
+        return return_val
+
+
+def sobel_filter(i: int) -> np.ndarray:
+    print("getting edge map for rgb image: ", str(i) + ".png")
+    img = read_image(INPUT_PATH + str(i) + "_source.png")
+    
+    shape = img.shape
+    return_val = np.zeros((shape[0], shape[1]))
+    
+    sobel_v = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+    sobel_h = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+
+    img = zero_padd(img, 5)
+    red_channel = img[:,:,0]
+    green_channel = img[:,:,1]
+    blue_channel = img[:,:,2]
+
+    for x in range(1, shape[0] - 1):
+        for y in range(1, shape[1] - 1):
+            return_val[x][y] += np.sqrt(np.sum(np.multiply(sobel_v, red_channel[x-1:x+2, y-1:y+2]))**2 + np.sum(np.multiply(sobel_h, red_channel[x-1:x+2, y-1:y+2]))**2)
+            return_val[x][y] += np.sqrt(np.sum(np.multiply(sobel_v, green_channel[x-1:x+2, y-1:y+2]))**2 + np.sum(np.multiply(sobel_h, green_channel[x-1:x+2, y-1:y+2]))**2)
+            return_val[x][y] += np.sqrt(np.sum(np.multiply(sobel_v, blue_channel[x-1:x+2, y-1:y+2]))**2 + np.sum(np.multiply(sobel_h, blue_channel[x-1:x+2, y-1:y+2]))**2)
+
+    write_image(return_val, OUTPUT_PATH + str(i) + "_rgb_colored_edges.png")
+
+
+def get_hsi_image(img_func: np.ndarray) -> np.ndarray:
+    return_val = np.zeros((img_func.shape[0], img_func.shape[1], 3))
+    red_channel = img_func[:,:,0]
+    green_channel = img_func[:,:,1]
+    blue_channel = img_func[:,:,2]
+    
+    h_channel = (1/2) * ((red_channel - green_channel) + (red_channel - blue_channel)) / (np.sqrt((red_channel - green_channel)**2 + (red_channel - blue_channel) * (green_channel - blue_channel)))
+    #if a value in h_channel is more than 1 or less than -1, set it to 1 or -1
+    h_channel = np.where(h_channel > 1, 1, h_channel)
+    h_channel = np.where(h_channel < -1, -1, h_channel)
+    h_channel = np.arccos(h_channel)
+    # h_channel = np.nan_to_num(h_channel)
+
+    for x in range(0, h_channel.shape[0]):
+        for y in range(0, h_channel.shape[1]):
+            if blue_channel[x][y] <= green_channel[x][y]:
+                h_channel[x][y] = h_channel[x][y]
+            else:
+                h_channel[x][y] = 2 * np.pi - h_channel[x][y]
+
+    s_channel = 1 - (3 / (red_channel + green_channel + blue_channel + 0.000001)) * np.minimum(np.minimum(red_channel, green_channel), blue_channel)
+    i_channel = np.multiply((1/3), (red_channel + green_channel + blue_channel))
+
+    return_val[:,:,0] = h_channel
+    return_val[:,:,1] = s_channel
+    return_val[:,:,2] = i_channel
+    return return_val
+
+
+def sobel_hsi(i: int) -> np.ndarray:
+    print("getting edge map for hsi image: ", str(i) + ".png")
+    img = read_image(INPUT_PATH + str(i) + "_source.png")
+    
+    shape = img.shape
+    return_val = np.zeros((shape[0], shape[1]))
+    intensity_channel = np.zeros((shape[0], shape[1]))
+
+    for x in range(0, shape[0]):
+        for y in range(0, shape[1]):
+            intensity_channel[x][y] = (int(img[x][y][0]) + int(img[x][y][1]) + int(img[x][y][2]))/3
+
+    sobel_v = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+    sobel_h = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+
+    intensity_channel = zero_padd(intensity_channel, 5, False)
+
+    for x in range(1, shape[0] - 1):
+        for y in range(1, shape[1] - 1):
+            return_val[x][y] += np.sqrt(np.sum(np.multiply(sobel_v, intensity_channel[x-1:x+2, y-1:y+2]))**2 + np.sum(np.multiply(sobel_h, intensity_channel[x-1:x+2, y-1:y+2]))**2)
+
+    write_image(return_val, OUTPUT_PATH + str(i) + "_hsi_colored_edges.png")
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
@@ -434,3 +689,28 @@ if __name__ == '__main__':
     detect_faces("1_source", "1_faces", 6, print_intermediate=True)
     detect_faces("2_source", "2_faces", 6, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001, equalize=False)
     detect_faces("3_source", "3_faces", 6, print_intermediate=True)
+
+    color_images(1)
+    color_images(2)
+    color_images(3)
+    color_images(4)
+    
+    get_rgb_historgram(1)
+    get_rgb_historgram(2)
+    get_rgb_historgram(3)
+    get_rgb_historgram(4)
+    
+    get_hsi_histogram(1)
+    get_hsi_histogram(2)
+    get_hsi_histogram(3)
+    get_hsi_histogram(4)
+
+    sobel_filter(1)
+    sobel_filter(2)
+    sobel_filter(3)
+    sobel_filter(4)
+
+    sobel_hsi(1)
+    sobel_hsi(2)
+    sobel_hsi(3)
+    sobel_hsi(4)
