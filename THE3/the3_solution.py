@@ -424,13 +424,13 @@ def detect_faces(input_name: str,
     if factor_x > 1 or factor_y > 1:
         original = down_sample_image(original, factor_x, factor_y)
 
-    img_func = original * apply_convolution_result(img_func, factor_x, factor_y, original.shape[2])
+    img_func = original * apply_convolution_result(img_func, mask_x, mask_y, original.shape[2])
     write_image(img_func, f"{OUTPUT_PATH}{output_name}.png")
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
 
-    detect_faces("1_source", "1_faces_no_equal", 6, equalize=False, print_intermediate=True)
-    detect_faces("2_source", "2_faces_no_equal", 4, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001, equalize=False)
-    detect_faces("3_source", "3_faces_no_equal", 6, equalize=False, print_intermediate=True)
+    detect_faces("1_source", "1_faces", 6, print_intermediate=True)
+    detect_faces("2_source", "2_faces", 6, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001, equalize=False)
+    detect_faces("3_source", "3_faces", 6, print_intermediate=True)
