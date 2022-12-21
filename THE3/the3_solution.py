@@ -305,37 +305,27 @@ def frame_cull(img_func: np.ndarray, factor_x: float, factor_y: float) -> np.nda
     return ret_val
 
 
-def convolve2D(image, kernel, padding_x = 1, padding_y = 1):
-    # Cross Correlation
-    kernel = np.flipud(np.fliplr(kernel))
+def convolve_image(img_func: np.ndarray, mask: np.ndarray, padding_x: int  = 1, padding_y: int = 1) -> np.ndarray:
+    mask = np.flipud(np.fliplr(mask))
 
-    # Gather Shapes of Kernel + Image + Padding
-    xKernShape = kernel.shape[0]
-    yKernShape = kernel.shape[1]
-    xImgShape = image.shape[0]
-    yImgShape = image.shape[1]
+    mask_shape_x = mask.shape[0]
+    mask_shape_y = mask.shape[1]
+    img_shape_x = img_func.shape[0]
+    img_shape_y = img_func.shape[1]
 
-    # Shape of Output Convolution
-    xOutput = int((xImgShape - xKernShape + 2 * padding_x))
-    yOutput = int((yImgShape - yKernShape + 2 * padding_y))
-    output = np.zeros((xOutput, yOutput))
+    output = np.zeros((int((img_shape_x - mask_shape_x + 2 * padding_x)), int((img_shape_y - mask_shape_y + 2 * padding_y))))
 
-    # Apply Equal Padding to All Sides
-    imagePadded = np.zeros((xImgShape + padding_x * 2, yImgShape + padding_y * 2))
-    imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = image
+    imagePadded = np.zeros((img_shape_x + padding_x * 2, img_shape_y + padding_y * 2))
+    imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func
 
-    # Iterate through image
-    for y in range(yImgShape):
-        # Exit Convolution
-        if y > yImgShape - yKernShape:
+    for y in range(img_shape_y):
+        if y > img_shape_y - mask_shape_y:
             break
-        # Only Convolve if y has gone down by the specified Strides
-        for x in range(xImgShape):
-            # Go to next row once kernel is out of bounds
-            if x > xImgShape - xKernShape:
+        for x in range(img_shape_x):
+            if x > img_shape_x - mask_shape_x:
                 break
             try:
-                output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
+                output[x, y] = (mask * imagePadded[x: x + mask_shape_x, y: y + mask_shape_y]).sum()
             except:
                 break
 
@@ -426,7 +416,7 @@ def detect_faces(input_name: str,
     if print_intermediate:
         write_image(img_func, f"{OUTPUT_PATH}{output_name}_closed_{close_amount}.png")
 
-    img_func = convolve2D(binarize_image(img_func), get_ellipse_mask(mask_x, mask_y), mask_x, mask_y)
+    img_func = convolve_image(binarize_image(img_func), get_ellipse_mask(mask_x, mask_y), mask_x, mask_y)
     if print_intermediate:
         write_image(normalize(img_func), f"{OUTPUT_PATH}{output_name}_convolution.png")
 
@@ -434,13 +424,13 @@ def detect_faces(input_name: str,
     if factor_x > 1 or factor_y > 1:
         original = down_sample_image(original, factor_x, factor_y)
 
-    img_func = original * apply_convolution_result(img_func, 20, 15, original.shape[2])
+    img_func = original * apply_convolution_result(img_func, factor_x, factor_y, original.shape[2])
     write_image(img_func, f"{OUTPUT_PATH}{output_name}.png")
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
 
-    """detect_faces("1_source", "1_faces", 6)"""
-    detect_faces("2_source", "2_faces", 4, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001)
-    """detect_faces("3_source", "3_faces", 6)"""
+    detect_faces("1_source", "1_faces_no_equal", 6, equalize=False, print_intermediate=True)
+    detect_faces("2_source", "2_faces_no_equal", 4, factor_x=9, factor_y=9, print_intermediate=True, cull_factor_x=0.001, cull_factor_y=0.001, equalize=False)
+    detect_faces("3_source", "3_faces_no_equal", 6, equalize=False, print_intermediate=True)
