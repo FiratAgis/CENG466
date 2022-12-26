@@ -515,27 +515,22 @@ def visualize_palette(palette: np.ndarray) -> np.ndarray:
 
 
 def color_images(i: int):
-    print("coloring image: ", str(i) + ".png")
     #read image and the source
     img = read_image(INPUT_PATH + str(i) + ".png")
     source = read_image(INPUT_PATH + str(i) + "_source.png")
     
     #create palette and visualize it
-    print("creating palette")
     palette = create_palette(source, 0.2989, 0.5870, 0.1140)
     write_image(visualize_palette(palette), OUTPUT_PATH + str(i) + "_palette.png")
-    print("filling palette")
     palette = fill_palette(palette)
     write_image(visualize_palette(palette), OUTPUT_PATH + str(i) + "_filled_palette.png")
 
-    print("mapping colors")
     #create colored image and write it
     colored_img = map_with_palette(img, palette)
     write_image(colored_img, OUTPUT_PATH + str(i) + "_colored.png")
 
 
 def get_rgb_historgram(i: int):
-    print("getting rgb histogram: ", str(i) + ".png")
     img = read_image(OUTPUT_PATH + str(i) + "_colored.png")
     red_channel = img[:,:,0].flatten()
     green_channel = img[:,:,1].flatten()
@@ -552,7 +547,6 @@ def get_rgb_historgram(i: int):
 
 
 def get_hsi_histogram(i: int):
-    print("getting hsi histogram: ", str(i) + ".png")
     img = read_image(OUTPUT_PATH + str(i) + "_colored.png")
     red_channel = img[:,:,0]
     green_channel = img[:,:,1]
@@ -608,7 +602,6 @@ def zero_padd(img_func: np.ndarray, i: int, rgb: bool = True) -> np.ndarray:
 
 
 def sobel_filter(i: int) -> np.ndarray:
-    print("getting edge map for rgb image: ", str(i) + ".png")
     img = read_image(INPUT_PATH + str(i) + "_source.png")
     
     shape = img.shape
@@ -661,7 +654,6 @@ def get_hsi_image(img_func: np.ndarray) -> np.ndarray:
 
 
 def sobel_hsi(i: int) -> np.ndarray:
-    print("getting edge map for hsi image: ", str(i) + ".png")
     img = read_image(INPUT_PATH + str(i) + "_source.png")
     
     shape = img.shape
