@@ -43,6 +43,41 @@ def normalize(arr: np.ndarray) -> np.ndarray:
     return (arr - min_val) * (254 / (max_val - min_val))
 
 
+def grayscale_morphological_operation(img_func: np.ndarray, structuring_element: np.ndarray, operation_type: str) -> np.ndarray:
+    if operation_type.lower() == "o":
+        return grayscale_morphological_operation(grayscale_morphological_operation(img_func, structuring_element, "e"),
+                                                 structuring_element, "d")
+    elif operation_type.lower() == "c":
+        return grayscale_morphological_operation(grayscale_morphological_operation(img_func, structuring_element, "d"),
+                                                 structuring_element, "e")
+    mask_shape_x = structuring_element.shape[0]
+    mask_shape_y = structuring_element.shape[1]
+    padding_x = int(mask_shape_x // 2)
+    padding_y = int(mask_shape_y // 2)
+    img_shape_x = img_func.shape[0]
+    img_shape_y = img_func.shape[1]
+
+    output = np.zeros((img_shape_x, img_shape_y))
+
+    imagePadded = np.zeros((img_shape_x + padding_x * 2, img_shape_y + padding_y * 2))
+    imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func
+
+    for y in range(img_shape_y):
+        if y > img_shape_y - mask_shape_y:
+            break
+        for x in range(img_shape_x):
+            if x > img_shape_x - mask_shape_x:
+                break
+            try:
+                if operation_type.lower() == "d":
+                    output[x, y] = (structuring_element * imagePadded[x: x + mask_shape_x, y: y + mask_shape_y]).max()
+                elif operation_type.lower() == "e":
+                    output[x, y] = (structuring_element * imagePadded[x: x + mask_shape_x, y: y + mask_shape_y]).min()
+            except:
+                break
+
+    return output
+
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
