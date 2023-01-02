@@ -38,9 +38,13 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
 
 
 def normalize(arr: np.ndarray) -> np.ndarray:
-    max_val = arr.max()
-    min_val = arr.min()
-    return (arr - min_val) * (254 / (max_val - min_val))
+    max_val = max(arr.max(), 255)
+    min_val = min(arr.min(), 0)
+    return (arr - min_val) * (255 / (max_val - min_val))
+
+
+def grayscale_image(img_func: np.ndarray) -> np.ndarray:
+    return normalize((img_func[:,:,0] + img_func[:,:,1] + img_func[:,:,2])/3)
 
 
 def grayscale_morphological_operation(img_func: np.ndarray, structuring_element: np.ndarray, operation_type: str) -> np.ndarray:
@@ -50,10 +54,12 @@ def grayscale_morphological_operation(img_func: np.ndarray, structuring_element:
     elif operation_type.lower() == "c":
         return grayscale_morphological_operation(grayscale_morphological_operation(img_func, structuring_element, "d"),
                                                  structuring_element, "e")
-    mask_shape_x = structuring_element.shape[0]
-    mask_shape_y = structuring_element.shape[1]
-    padding_x = int(mask_shape_x // 2)
-    padding_y = int(mask_shape_y // 2)
+    elif operation_type.lower() == "t":
+        return img_func - grayscale_morphological_operation(img_func, structuring_element, "o")
+    element_shape_x = structuring_element.shape[0]
+    element_shape_y = structuring_element.shape[1]
+    padding_x = int(element_shape_x // 2)
+    padding_y = int(element_shape_y // 2)
     img_shape_x = img_func.shape[0]
     img_shape_y = img_func.shape[1]
 
@@ -63,20 +69,29 @@ def grayscale_morphological_operation(img_func: np.ndarray, structuring_element:
     imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func
 
     for y in range(img_shape_y):
-        if y > img_shape_y - mask_shape_y:
+        if y > img_shape_y - element_shape_y:
             break
         for x in range(img_shape_x):
-            if x > img_shape_x - mask_shape_x:
+            if x > img_shape_x - element_shape_x:
                 break
             try:
                 if operation_type.lower() == "d":
-                    output[x, y] = (structuring_element * imagePadded[x: x + mask_shape_x, y: y + mask_shape_y]).max()
+                    output[x, y] = (structuring_element * imagePadded[x: x + element_shape_x, y: y + element_shape_y]).max()
                 elif operation_type.lower() == "e":
-                    output[x, y] = (structuring_element * imagePadded[x: x + mask_shape_x, y: y + mask_shape_y]).min()
+                    output[x, y] = (structuring_element * imagePadded[x: x + element_shape_x, y: y + element_shape_y]).min()
             except:
                 break
 
     return output
+
+
+def generate_circular_structuring_element(radius: int, value: float = 1.0) -> np.ndarray:
+    ret_val = np.zeros((radius*2, radius*2))
+    for x in range(radius*2):
+        for y in range(radius*2):
+            if x**2 + y**2 < radius**2:
+                ret_val[x][y] = value
+    return ret_val
 
 
 if __name__ == '__main__':
