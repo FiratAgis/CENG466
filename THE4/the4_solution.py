@@ -37,6 +37,13 @@ def write_image(img_func: np.ndarray, output_path: str, rgb: bool = True) -> Non
     matplotlib.image.imsave(output_path, output_file)
 
 
+def add_rgb_channel(img_func: np.ndarray) -> np.ndarray:
+    ret_val = np.zeros((img_func.shape[0], img_func.shape[1], 3))
+    ret_val[:, :, 0] = img_func
+    ret_val[:, :, 1] = img_func
+    ret_val[:, :, 2] = img_func
+    return ret_val
+
 def normalize(arr: np.ndarray) -> np.ndarray:
     max_val = max(arr.max(), 255)
     min_val = min(arr.min(), 0)
@@ -44,7 +51,11 @@ def normalize(arr: np.ndarray) -> np.ndarray:
 
 
 def grayscale_image(img_func: np.ndarray) -> np.ndarray:
-    return normalize((img_func[:,:,0] + img_func[:,:,1] + img_func[:,:,2])/3)
+    ret_val = np.zeros((img_func.shape[0], img_func.shape[1],))
+    ret_val += img_func[:, :, 0]
+    ret_val += img_func[:, :, 1]
+    ret_val += img_func[:, :, 2]
+    return ret_val / 3
 
 
 def grayscale_morphological_operation(img_func: np.ndarray, structuring_element: np.ndarray, operation_type: str) -> np.ndarray:
@@ -94,9 +105,12 @@ def generate_circular_structuring_element(radius: int, value: float = 1.0) -> np
     return ret_val
 
 
+
+
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
-
+    img = grayscale_image(read_image(INPUT_PATH + "A1.png"))
+    write_image(add_rgb_channel(img), OUTPUT_PATH + "A1_gray.png", True)
 
 
