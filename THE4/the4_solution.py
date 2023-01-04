@@ -48,10 +48,11 @@ def add_rgb_channel(img_func: np.ndarray) -> np.ndarray:
     ret_val[:, :, 2] = img_func
     return ret_val
 
+
 def normalize(arr: np.ndarray) -> np.ndarray:
     max_val = max(arr.max(), 255)
     min_val = min(arr.min(), 0)
-    return (arr - min_val) * (255 / (max_val - min_val))
+    return ((arr - min_val) * (255 / (max_val - min_val))).astype(np.uint8)
 
 
 def grayscale_image(img_func: np.ndarray) -> np.ndarray:
@@ -59,7 +60,7 @@ def grayscale_image(img_func: np.ndarray) -> np.ndarray:
     ret_val += img_func[:, :, 0]
     ret_val += img_func[:, :, 1]
     ret_val += img_func[:, :, 2]
-    return ret_val / 3
+    return (ret_val / 3).astype(np.uint8)
 
 
 def grayscale_morphological_operation(img_func: np.ndarray, structuring_element: np.ndarray, operation_type: str) -> np.ndarray:
@@ -78,25 +79,37 @@ def grayscale_morphological_operation(img_func: np.ndarray, structuring_element:
     img_shape_x = img_func.shape[0]
     img_shape_y = img_func.shape[1]
 
-    output = np.zeros((img_shape_x, img_shape_y))
+    limit_y = img_shape_y - element_shape_y
+    limit_x = img_shape_x - element_shape_x
 
-    imagePadded = np.zeros((img_shape_x + padding_x * 2, img_shape_y + padding_y * 2))
-    imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func
+    output = np.zeros((img_shape_x, img_shape_y), dtype=np.uint8)
 
-    for y in range(img_shape_y):
-        if y > img_shape_y - element_shape_y:
-            break
-        for x in range(img_shape_x):
-            if x > img_shape_x - element_shape_x:
+    if operation_type.lower() == "d":
+        imagePadded = np.zeros((img_shape_x + padding_x * 2, img_shape_y + padding_y * 2), dtype=np.uint8)
+        imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func.astype(np.uint8)
+        for y in range(img_shape_y):
+            if y > limit_y:
                 break
-            try:
-                if operation_type.lower() == "d":
+            for x in range(img_shape_x):
+                if x > limit_x:
+                    break
+                try:
                     output[x, y] = (structuring_element * imagePadded[x: x + element_shape_x, y: y + element_shape_y]).max()
-                elif operation_type.lower() == "e":
-                    output[x, y] = (structuring_element * imagePadded[x: x + element_shape_x, y: y + element_shape_y]).min()
-            except:
+                except:
+                    break
+    elif operation_type.lower() == "e":
+        imagePadded = np.full((img_shape_x + padding_x * 2, img_shape_y + padding_y * 2), dtype=np.uint8, fill_value=255)
+        imagePadded[int(padding_x):int(-1 * padding_x), int(padding_y):int(-1 * padding_y)] = img_func.astype(np.uint8)
+        for y in range(img_shape_y):
+            if y > limit_y:
                 break
-
+            for x in range(img_shape_x):
+                if x > limit_x:
+                    break
+                try:
+                    output[x, y] = (structuring_element * imagePadded[x: x + element_shape_x,  y: y + element_shape_y]).min()
+                except:
+                    break
     return output
 
 
@@ -320,12 +333,148 @@ def mean_shift_and_its_friends(file, min_bin_freq):
 
     plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(min_bin_freq), bbox_inches='tight')
 
+def get_average_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
+    col = np.zeros(3)
+    for color in colors:
+        col = col + color
+    col = col / len(colors)
+    return int(col[0]), int(col[1]), int(col[2]),
+
+
+def down_sample_image(img_func: np.ndarray, x_fact: int, y_fact: int, type: str = "rgb") -> np.ndarray:
+    x_limit = img_func.shape[0] // x_fact
+    y_limit = img_func.shape[1] // y_fact
+    if type.lower() == "rgb":
+        ret_val = np.zeros((x_limit, y_limit, 3), dtype=np.uint8)
+    else:
+        ret_val = np.zeros((x_limit, y_limit), dtype=np.uint8)
+    for x in range(x_limit):
+        for y in range(y_limit):
+            colors = []
+            if type.lower() == "rgb":
+                for xk in range(x_fact):
+                    for yk in range(y_fact):
+                        cell = img_func[x * x_fact + xk][y * y_fact + yk]
+                        colors.append((int(cell[0]), int(cell[1]), int(cell[2])))
+                color = get_average_color(colors)
+                ret_val[x][y][0] = color[0]
+                ret_val[x][y][1] = color[1]
+                ret_val[x][y][2] = color[2]
+            if type.lower() == "binary":
+                for xk in range(x_fact):
+                    for yk in range(y_fact):
+                        if img_func[x * x_fact + xk][y * y_fact + yk] > 200:
+                            colors.append(1)
+                        else:
+                            colors.append(0)
+                if sum(colors) >= (x_fact * y_fact) / 2:
+                    ret_val[x][y] = 255
+            if type.lower() == "gray":
+                for xk in range(x_fact):
+                    for yk in range(y_fact):
+                        colors.append(img_func[x * x_fact + xk][y * y_fact + yk])
+                ret_val[x][y] = sum(colors) / (x_fact * y_fact)
+    return ret_val.astype(np.uint8)
+
+
+def binarize_image(img_func: np.ndarray, threshold: int= 200) -> np.ndarray:
+    ret_val = np.zeros((img_func.shape[0], img_func.shape[1]), np.uint8)
+    for x in range(img_func.shape[0]):
+        for y in range(img_func.shape[1]):
+            if img_func[x][y] >= threshold:
+                ret_val[x][y] = 255
+    return ret_val
+
+
+def erode_image(img_func: np.ndarray, degree: int = 1) -> np.ndarray:
+    if degree == 0:
+        return img_func
+    final_image = np.zeros(img_func.shape)
+    for x in range(1, img_func.shape[0] - 1):
+        for y in range(1, img_func.shape[1] -1):
+            if (img_func[x-1][y-1] > 40 and img_func[x][y-1] > 40 and img_func[x+1][y-1] > 40 and
+                img_func[x-1][y] > 40 and img_func[x][y] > 40 and img_func[x+1][y] > 40 and
+                img_func[x-1][y+1] > 40 and img_func[x][y+1] > 40 and img_func[x+1][y+1] > 40):
+                final_image[x][y] = 255
+    return erode_image(final_image, degree - 1)
+
+
+def dilute_image(img_func: np.ndarray, degree: int = 1) -> np.ndarray:
+    if degree == 0:
+        return img_func
+    final_image = np.zeros(img_func.shape)
+    for x in range(1, img_func.shape[0] - 1):
+        for y in range(1, img_func.shape[1] -1):
+            if (img_func[x-1][y-1] > 40 or img_func[x][y-1]> 40 or img_func[x+1][y-1] > 40 or
+                img_func[x-1][y] > 40 or img_func[x][y] > 40 or img_func[x+1][y] > 40 or
+                img_func[x-1][y+1] > 40 or img_func[x][y+1] > 40 or img_func[x+1][y+1] > 40):
+                final_image[x][y] = 255
+    return dilute_image(final_image, degree - 1)
+
+
+def open_image(img_func: np.ndarray, degree: int = 1):
+    ret_val = erode_image(img_func, degree)
+    ret_val = dilute_image(ret_val, degree)
+    return  ret_val
+
+
+def close_image(img_func: np.ndarray, degree: int = 1):
+    ret_val = dilute_image(img_func, degree)
+    ret_val = erode_image(ret_val, degree)
+    return  ret_val
+
+
+def delete_flower(img_func: np.ndarray, x: int, y: int) -> np.ndarray:
+    if x < 0 or x >= img_func.shape[0] or y < 0 or y >= img_func.shape[1]:
+        return img_func
+    if img_func[x][y] < 200:
+        return img_func
+    else:
+        ret_val = np.array(img_func)
+        ret_val[x][y] = 0
+        try:
+            ret_val = delete_flower(ret_val, x - 1, y)
+            ret_val = delete_flower(ret_val, x + 1, y)
+            ret_val = delete_flower(ret_val, x, y - 1)
+            ret_val = delete_flower(ret_val, x, y + 1)
+        except RecursionError:
+            return ret_val
+        return ret_val
+
+
+def count_flowers(img_func: np.ndarray) -> int:
+    flower_count = 0
+    temp = np.array(img_func)
+    for x in range(img_func.shape[0]):
+        for y in range(img_func.shape[1]):
+            if temp[x][y] > 200:
+                flower_count += 1
+                temp = delete_flower(temp, x, y)
+    return flower_count
 
 
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
-    img = grayscale_image(read_image(INPUT_PATH + "A1.png"))
-    write_image(add_rgb_channel(img), OUTPUT_PATH + "A1_gray.png", True)
 
-
+    for model in (2, 3):
+        img = read_image(f"{INPUT_PATH}A{model}.png")
+        print("Started Down Sampling")
+        img = down_sample_image(img, 16, 16)
+        print("Finished Down Sampling")
+        img = grayscale_image(img)
+        for i in (25, 50, 75, 100, 150, 200):
+            print(f"Started morph for {i}")
+            img_new = grayscale_morphological_operation(img, np.ones((i, i)), "t")
+            print(f"Finished morph for {i}")
+            write_image(add_rgb_channel(img_new), f"{OUTPUT_PATH}A{model}_gray_{i}.png", True)
+            print(f"Binarizing Image for {i}")
+            img_new = binarize_image(img_new, 100)
+            write_image(add_rgb_channel(img_new), f"{OUTPUT_PATH}A{model}_gray_binary_{i}.png", True)
+            print(f"Cleaning Image for {i}")
+            if model == 2:
+                img_new = down_sample_image(img_new, 2, 2, "binary")
+            for clean in (1, 2, 4, 6):
+                img_new_new = close_image(open_image(img_new, clean), clean)
+                write_image(add_rgb_channel(img_new_new), f"{OUTPUT_PATH}A{model}_gray_final_{i}_{clean}.png", True)
+                print(f"A{model}_{i}_{clean}_flower = {count_flowers(img_new_new)}")
