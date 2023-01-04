@@ -121,15 +121,18 @@ def generate_circular_structuring_element(radius: int, value: float = 1.0) -> np
                 ret_val[x][y] = value
     return ret_val
 
-def mean_shift_and_its_friends(file, min_bin_freq):
+
+def mean_shift_and_its_friends(file, cluster_freq: int = 100):
 
     plt.figure(figsize=(20,5))
-    img = cv.imread("/content/B" + str(file) + "3.jpg")
+    img_data = Image.open(INPUT_PATH + "B" + str(file) + ".jpg")
+    img = np.asarray(img_data)
+    img = down_sample_image(img, 16, 16)
 
     # filter to reduce noise
     img = cv.medianBlur(img, 9)
 
-    img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+    # img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
     plt.subplot(2,3,1)
     plt.imshow(img)
@@ -142,15 +145,13 @@ def mean_shift_and_its_friends(file, min_bin_freq):
 
     # meanshift
     bandwidth = estimate_bandwidth(flat_image, quantile=.06, n_samples=3000)
-    ms = MeanShift(bandwidth = bandwidth, max_iter=800, min_bin_freq=100, bin_seeding=True)
+    ms = MeanShift(bandwidth = bandwidth, max_iter=800, min_bin_freq=cluster_freq, bin_seeding=True)
     ms.fit(flat_image)
     labeled=ms.labels_
 
 
     # get number of segments
     segments = np.unique(labeled)
-    print('Number of segments: ', segments.shape[0])
-    print(segments)
     # get the average color of each segment
     total = np.zeros((segments.shape[0], 3), dtype=float)
     count = np.zeros(total.shape, dtype=float)
@@ -330,8 +331,220 @@ def mean_shift_and_its_friends(file, min_bin_freq):
     plt.axis('off')
 
 
+    plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(cluster_freq), bbox_inches='tight')
 
-    plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(min_bin_freq), bbox_inches='tight')
+
+def mean_shift_and_its_friends(file, cluster_freq: int = 100):
+
+    plt.figure(figsize=(20,5))
+    img_data = Image.open(INPUT_PATH + "B" + str(file) + ".jpg")
+    img = np.asarray(img_data)
+    img = down_sample_image(img, 16, 16)
+
+    # filter to reduce noise
+    img = cv.medianBlur(img, 9)
+
+    # img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+
+    plt.subplot(2,3,1)
+    plt.imshow(img)
+    plt.title('Original Image')
+    plt.axis('off')
+
+    # flatten the image
+    flat_image = img.reshape((-1,3))
+    flat_image = np.float32(flat_image)
+
+    # meanshift
+    bandwidth = estimate_bandwidth(flat_image, quantile=.06, n_samples=3000)
+    ms = MeanShift(bandwidth = bandwidth, max_iter=800, min_bin_freq=cluster_freq, bin_seeding=True)
+    ms.fit(flat_image)
+    labeled=ms.labels_
+
+
+    # get number of segments
+    segments = np.unique(labeled)
+    # get the average color of each segment
+    total = np.zeros((segments.shape[0], 3), dtype=float)
+    count = np.zeros(total.shape, dtype=float)
+    for i, label in enumerate(labeled):
+        total[label] = total[label] + flat_image[i]
+        count[label] += 1
+    avg = total/count
+    avg = np.uint8(avg)
+
+    # cast the labeled image into the corresponding average color
+    res = avg[labeled]
+    result = res.reshape((img.shape))
+
+
+    plt.subplot(2,3,2)
+    plt.imshow(result)
+    plt.title('Segmentation Map')
+    plt.axis('off')
+
+
+    result_gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+    edges = cv.Canny(result_gray, 30, 80)
+
+    boundary_over = img
+
+    for x in range(1, edges.shape[0]-1):
+        for y in range(1, edges.shape[1]-1):
+            if edges[x][y] > 127:
+                boundary_over[x][y][0] = 255
+                boundary_over[x][y][1] = 0
+                boundary_over[x][y][2] = 0
+
+                boundary_over[x+1][y][0] = 255
+                boundary_over[x+1][y][1] = 0
+                boundary_over[x+1][y][2] = 0
+
+                boundary_over[x-1][y][0] = 255
+                boundary_over[x-1][y][1] = 0
+                boundary_over[x-1][y][2] = 0
+
+                boundary_over[x][y+1][0] = 255
+                boundary_over[x][y+1][1] = 0
+                boundary_over[x][y][2] = 0
+
+                boundary_over[x][y-1][0] = 255
+                boundary_over[x][y-1][1] = 0
+                boundary_over[x][y-1][2] = 0
+
+    for x in range(0, edges.shape[0]):
+        boundary_over[x][2][0] = 255
+        boundary_over[x][2][1] = 0
+        boundary_over[x][2][2] = 0  
+
+        boundary_over[x][3][0] = 255
+        boundary_over[x][3][1] = 0
+        boundary_over[x][3][2] = 0  
+
+        boundary_over[x][edges.shape[1]-3][0] = 255
+        boundary_over[x][edges.shape[1]-3][1] = 0
+        boundary_over[x][edges.shape[1]-3][2] = 0 
+
+        boundary_over[x][edges.shape[1]-2][0] = 255
+        boundary_over[x][edges.shape[1]-2][1] = 0
+        boundary_over[x][edges.shape[1]-2][2] = 0 
+
+    for y in range(0, edges.shape[1]):
+        boundary_over[2][y][0] = 255
+        boundary_over[2][y][1] = 0
+        boundary_over[2][y][2] = 0  
+
+        boundary_over[3][y][0] = 255
+        boundary_over[3][y][1] = 0
+        boundary_over[3][y][2] = 0  
+
+        boundary_over[edges.shape[0]-2][y][0] = 255
+        boundary_over[edges.shape[0]-2][y][1] = 0
+        boundary_over[edges.shape[0]-2][y][2] = 0 
+
+        boundary_over[edges.shape[0]-3][y][0] = 255
+        boundary_over[edges.shape[0]-3][y][1] = 0
+        boundary_over[edges.shape[0]-3][y][2] = 0 
+
+
+    plt.subplot(2,3,3)
+    plt.imshow(boundary_over)
+    plt.title('Boundary Overlay')
+    plt.axis('off')
+
+
+    labeled_img = labeled.reshape((img.shape[0], img.shape[1]))
+    adjacencies = np.zeros((segments.shape[0],segments.shape[0],5))
+
+    for i in range(0,segments.shape[0]):
+        adjacencies[i][i][0] = 1
+
+
+    #four neighbourhood
+    for x in range(1, labeled_img.shape[0]-1):
+        for y in range(1, labeled_img.shape[1]-1):
+            if labeled_img[x][y] != labeled_img[x-1][y]:
+                adjacencies[labeled_img[x][y]][labeled_img[x-1][y]][0] = 1
+                adjacencies[labeled_img[x][y]][labeled_img[x-1][y]][1] = 1 #right neighbour
+            if labeled_img[x][y] != labeled_img[x+1][y]:
+                adjacencies[labeled_img[x][y]][labeled_img[x+1][y]][0] = 1
+                adjacencies[labeled_img[x][y]][labeled_img[x+1][y]][2] = 1 #left neighbour
+            if labeled_img[x][y] != labeled_img[x][y-1]:
+                adjacencies[labeled_img[x][y]][labeled_img[x][y-1]][0] = 1
+                adjacencies[labeled_img[x][y]][labeled_img[x][y-1]][3] = 1 #up neighbour
+            if labeled_img[x][y] != labeled_img[x][y+1]:
+                adjacencies[labeled_img[x][y]][labeled_img[x][y+1]][0] = 1
+                adjacencies[labeled_img[x][y]][labeled_img[x][y+1]][4] = 1 #down neighbour
+
+    adjacencie_graph = nx.Graph()
+
+    for i in segments:
+        adjacencie_graph.add_node(i)
+
+    for i in range(0,segments.shape[0]):
+        for j in range(0,segments.shape[0]):
+            if adjacencies[i][j][0] == 1:
+                adjacencie_graph.add_edge(i,j)
+
+
+
+    plt.subplot(2,3,4)
+    nx.draw_circular(adjacencie_graph, with_labels = True)
+    plt.title('Adjacency Graph')
+    plt.axis('off')
+
+
+    tree_rep = nx.Graph()
+
+    tree_rep.add_node("root", size=10)
+
+    label_counts = np.bincount(labeled)
+    label_counts = np.nan_to_num(label_counts, nan=0)
+
+    max_label = 0
+    second_max = 1
+
+    for i in range(0, len(label_counts)):
+        if label_counts[i] > label_counts[max_label]:
+            second_max = max_label
+            max_label = i
+    
+    if max_label == 0 and second_max == 0:
+        for i in range(1, len(label_counts)):
+            if label_counts[i] > label_counts[second_max]:
+                second_max = i
+
+
+    tree_rep.add_node(max_label)
+    tree_rep.add_edge(max_label,"root")
+
+    tree_rep.add_node(second_max)
+    tree_rep.add_edge(second_max,"root")
+
+
+    # most_frequent = labeled[indices]
+
+    for i in range(0,segments.shape[0]):
+        for j in range(0,segments.shape[0]):
+            if adjacencies[i][j][0] == 1 and i != max_label and i != second_max:
+                if adjacencies[i][j][1] == 1 and adjacencies[i][j][2] == 1 and adjacencies[i][j][3] == 1 and adjacencies[i][j][4] == 1 :
+                    tree_rep.add_node(i)
+                    tree_rep.add_edge(i,j)
+                    continue
+
+
+
+
+
+    plt.subplot(2,3,5)
+    pos=nx.kamada_kawai_layout(tree_rep)
+    nx.draw_circular(tree_rep, with_labels = True)
+    plt.title('Tree Representation')
+    plt.axis('off')
+
+
+    plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(cluster_freq), bbox_inches='tight')
+
 
 def get_average_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
     col = np.zeros(3)
