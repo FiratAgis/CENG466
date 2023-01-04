@@ -333,217 +333,117 @@ def mean_shift_and_its_friends(file, cluster_freq: int = 100):
 
     plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(cluster_freq), bbox_inches='tight')
 
+def n_cut_and_its_friends(file, n_segments: int = 400):
 
-def mean_shift_and_its_friends(file, cluster_freq: int = 100):
+  plt.figure(figsize=(20,5))
+  img_data = Image.open(INPUT_PATH + "B" + str(file) + ".jpg")
+  img = np.asarray(img_data)
+  img = down_sample_image(img, 16, 16)
 
-    plt.figure(figsize=(20,5))
-    img_data = Image.open(INPUT_PATH + "B" + str(file) + ".jpg")
-    img = np.asarray(img_data)
-    img = down_sample_image(img, 16, 16)
+  # img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
-    # filter to reduce noise
-    img = cv.medianBlur(img, 9)
+  plt.subplot(1,3,1)
+  plt.imshow(img)
+  plt.title('Original Image')
+  plt.axis('off')
 
-    # img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+      # flatten the image
+  flat_image = img.reshape((-1,3))
+  flat_image = np.float32(flat_image)
 
-    plt.subplot(2,3,1)
-    plt.imshow(img)
-    plt.title('Original Image')
-    plt.axis('off')
+  labels1 = segmentation.slic(img, compactness=30, n_segments=400)
+  out1 = color.label2rgb(labels1, img, kind='avg')
 
-    # flatten the image
-    flat_image = img.reshape((-1,3))
-    flat_image = np.float32(flat_image)
+  g = graph.rag_mean_color(img, labels1, mode='similarity')
+  labels2 = graph.cut_normalized(labels1, g)
+  result = color.label2rgb(labels2, img, kind='avg')
 
-    # meanshift
-    bandwidth = estimate_bandwidth(flat_image, quantile=.06, n_samples=3000)
-    ms = MeanShift(bandwidth = bandwidth, max_iter=800, min_bin_freq=cluster_freq, bin_seeding=True)
-    ms.fit(flat_image)
-    labeled=ms.labels_
-
-
-    # get number of segments
-    segments = np.unique(labeled)
-    # get the average color of each segment
-    total = np.zeros((segments.shape[0], 3), dtype=float)
-    count = np.zeros(total.shape, dtype=float)
-    for i, label in enumerate(labeled):
-        total[label] = total[label] + flat_image[i]
-        count[label] += 1
-    avg = total/count
-    avg = np.uint8(avg)
-
-    # cast the labeled image into the corresponding average color
-    res = avg[labeled]
-    result = res.reshape((img.shape))
+  result = result.astype(np.uint8)
+  labeled = np.zeros((result.shape[0], result.shape[1]))
+  labeled = np.sum(result, axis=2)//3
+  labels = labeled
+  labels = np.unique(labels)
+  segments = labels
 
 
-    plt.subplot(2,3,2)
-    plt.imshow(result)
-    plt.title('Segmentation Map')
-    plt.axis('off')
+  plt.subplot(1,3,2)
+  plt.imshow(result)
+  plt.title('Segmentation Map')
+  plt.axis('off')
 
 
-    result_gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
-    edges = cv.Canny(result_gray, 30, 80)
+  result_gray = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+  edges = cv.Canny(result_gray, 30, 80)
 
-    boundary_over = img
+  boundary_over = img
+  boundary_over_copy = boundary_over.copy()
 
-    for x in range(1, edges.shape[0]-1):
-        for y in range(1, edges.shape[1]-1):
-            if edges[x][y] > 127:
-                boundary_over[x][y][0] = 255
-                boundary_over[x][y][1] = 0
-                boundary_over[x][y][2] = 0
+  for x in range(1, edges.shape[0]-1):
+    for y in range(1, edges.shape[1]-1):
+      if edges[x][y] > 127:
+        boundary_over_copy[x][y][0] = 255
+        boundary_over_copy[x][y][1] = 0
+        boundary_over_copy[x][y][2] = 0
 
-                boundary_over[x+1][y][0] = 255
-                boundary_over[x+1][y][1] = 0
-                boundary_over[x+1][y][2] = 0
+        boundary_over_copy[x+1][y][0] = 255
+        boundary_over_copy[x+1][y][1] = 0
+        boundary_over_copy[x+1][y][2] = 0
 
-                boundary_over[x-1][y][0] = 255
-                boundary_over[x-1][y][1] = 0
-                boundary_over[x-1][y][2] = 0
+        boundary_over_copy[x-1][y][0] = 255
+        boundary_over_copy[x-1][y][1] = 0
+        boundary_over_copy[x-1][y][2] = 0
 
-                boundary_over[x][y+1][0] = 255
-                boundary_over[x][y+1][1] = 0
-                boundary_over[x][y][2] = 0
+        boundary_over_copy[x][y+1][0] = 255
+        boundary_over_copy[x][y+1][1] = 0
+        boundary_over_copy[x][y][2] = 0
 
-                boundary_over[x][y-1][0] = 255
-                boundary_over[x][y-1][1] = 0
-                boundary_over[x][y-1][2] = 0
+        boundary_over_copy[x][y-1][0] = 255
+        boundary_over_copy[x][y-1][1] = 0
+        boundary_over_copy[x][y-1][2] = 0
 
-    for x in range(0, edges.shape[0]):
-        boundary_over[x][2][0] = 255
-        boundary_over[x][2][1] = 0
-        boundary_over[x][2][2] = 0  
+  for x in range(0, edges.shape[0]):
+        boundary_over_copy[x][2][0] = 255
+        boundary_over_copy[x][2][1] = 0
+        boundary_over_copy[x][2][2] = 0  
 
-        boundary_over[x][3][0] = 255
-        boundary_over[x][3][1] = 0
-        boundary_over[x][3][2] = 0  
+        boundary_over_copy[x][3][0] = 255
+        boundary_over_copy[x][3][1] = 0
+        boundary_over_copy[x][3][2] = 0  
 
-        boundary_over[x][edges.shape[1]-3][0] = 255
-        boundary_over[x][edges.shape[1]-3][1] = 0
-        boundary_over[x][edges.shape[1]-3][2] = 0 
+        boundary_over_copy[x][edges.shape[1]-3][0] = 255
+        boundary_over_copy[x][edges.shape[1]-3][1] = 0
+        boundary_over_copy[x][edges.shape[1]-3][2] = 0 
 
-        boundary_over[x][edges.shape[1]-2][0] = 255
-        boundary_over[x][edges.shape[1]-2][1] = 0
-        boundary_over[x][edges.shape[1]-2][2] = 0 
+        boundary_over_copy[x][edges.shape[1]-2][0] = 255
+        boundary_over_copy[x][edges.shape[1]-2][1] = 0
+        boundary_over_copy[x][edges.shape[1]-2][2] = 0 
 
-    for y in range(0, edges.shape[1]):
-        boundary_over[2][y][0] = 255
-        boundary_over[2][y][1] = 0
-        boundary_over[2][y][2] = 0  
+  for y in range(0, edges.shape[1]):
+        boundary_over_copy[2][y][0] = 255
+        boundary_over_copy[2][y][1] = 0
+        boundary_over_copy[2][y][2] = 0  
 
-        boundary_over[3][y][0] = 255
-        boundary_over[3][y][1] = 0
-        boundary_over[3][y][2] = 0  
+        boundary_over_copy[3][y][0] = 255
+        boundary_over_copy[3][y][1] = 0
+        boundary_over_copy[3][y][2] = 0  
 
-        boundary_over[edges.shape[0]-2][y][0] = 255
-        boundary_over[edges.shape[0]-2][y][1] = 0
-        boundary_over[edges.shape[0]-2][y][2] = 0 
+        boundary_over_copy[edges.shape[0]-2][y][0] = 255
+        boundary_over_copy[edges.shape[0]-2][y][1] = 0
+        boundary_over_copy[edges.shape[0]-2][y][2] = 0 
 
-        boundary_over[edges.shape[0]-3][y][0] = 255
-        boundary_over[edges.shape[0]-3][y][1] = 0
-        boundary_over[edges.shape[0]-3][y][2] = 0 
-
-
-    plt.subplot(2,3,3)
-    plt.imshow(boundary_over)
-    plt.title('Boundary Overlay')
-    plt.axis('off')
+        boundary_over_copy[edges.shape[0]-3][y][0] = 255
+        boundary_over_copy[edges.shape[0]-3][y][1] = 0
+        boundary_over_copy[edges.shape[0]-3][y][2] = 0 
 
 
-    labeled_img = labeled.reshape((img.shape[0], img.shape[1]))
-    adjacencies = np.zeros((segments.shape[0],segments.shape[0],5))
-
-    for i in range(0,segments.shape[0]):
-        adjacencies[i][i][0] = 1
-
-
-    #four neighbourhood
-    for x in range(1, labeled_img.shape[0]-1):
-        for y in range(1, labeled_img.shape[1]-1):
-            if labeled_img[x][y] != labeled_img[x-1][y]:
-                adjacencies[labeled_img[x][y]][labeled_img[x-1][y]][0] = 1
-                adjacencies[labeled_img[x][y]][labeled_img[x-1][y]][1] = 1 #right neighbour
-            if labeled_img[x][y] != labeled_img[x+1][y]:
-                adjacencies[labeled_img[x][y]][labeled_img[x+1][y]][0] = 1
-                adjacencies[labeled_img[x][y]][labeled_img[x+1][y]][2] = 1 #left neighbour
-            if labeled_img[x][y] != labeled_img[x][y-1]:
-                adjacencies[labeled_img[x][y]][labeled_img[x][y-1]][0] = 1
-                adjacencies[labeled_img[x][y]][labeled_img[x][y-1]][3] = 1 #up neighbour
-            if labeled_img[x][y] != labeled_img[x][y+1]:
-                adjacencies[labeled_img[x][y]][labeled_img[x][y+1]][0] = 1
-                adjacencies[labeled_img[x][y]][labeled_img[x][y+1]][4] = 1 #down neighbour
-
-    adjacencie_graph = nx.Graph()
-
-    for i in segments:
-        adjacencie_graph.add_node(i)
-
-    for i in range(0,segments.shape[0]):
-        for j in range(0,segments.shape[0]):
-            if adjacencies[i][j][0] == 1:
-                adjacencie_graph.add_edge(i,j)
+  plt.subplot(1,3,3)
+  plt.imshow(boundary_over_copy)
+  plt.title('Boundary Overlay')
+  plt.axis('off')
 
 
 
-    plt.subplot(2,3,4)
-    nx.draw_circular(adjacencie_graph, with_labels = True)
-    plt.title('Adjacency Graph')
-    plt.axis('off')
-
-
-    tree_rep = nx.Graph()
-
-    tree_rep.add_node("root", size=10)
-
-    label_counts = np.bincount(labeled)
-    label_counts = np.nan_to_num(label_counts, nan=0)
-
-    max_label = 0
-    second_max = 1
-
-    for i in range(0, len(label_counts)):
-        if label_counts[i] > label_counts[max_label]:
-            second_max = max_label
-            max_label = i
-    
-    if max_label == 0 and second_max == 0:
-        for i in range(1, len(label_counts)):
-            if label_counts[i] > label_counts[second_max]:
-                second_max = i
-
-
-    tree_rep.add_node(max_label)
-    tree_rep.add_edge(max_label,"root")
-
-    tree_rep.add_node(second_max)
-    tree_rep.add_edge(second_max,"root")
-
-
-    # most_frequent = labeled[indices]
-
-    for i in range(0,segments.shape[0]):
-        for j in range(0,segments.shape[0]):
-            if adjacencies[i][j][0] == 1 and i != max_label and i != second_max:
-                if adjacencies[i][j][1] == 1 and adjacencies[i][j][2] == 1 and adjacencies[i][j][3] == 1 and adjacencies[i][j][4] == 1 :
-                    tree_rep.add_node(i)
-                    tree_rep.add_edge(i,j)
-                    continue
-
-
-
-
-
-    plt.subplot(2,3,5)
-    pos=nx.kamada_kawai_layout(tree_rep)
-    nx.draw_circular(tree_rep, with_labels = True)
-    plt.title('Tree Representation')
-    plt.axis('off')
-
-
-    plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_meanshift_parameterset_" + str(cluster_freq), bbox_inches='tight')
+  plt.savefig(OUTPUT_PATH + "B" + str(file) + "_algorithm_ncut_parameterset_" + str(n_segments), bbox_inches='tight')
 
 
 def get_average_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
@@ -694,3 +594,29 @@ if __name__ == '__main__':
     img = close_image(open_image(img, 4), 4) # Filter out noise
     write_image(add_rgb_channel(img), f"{OUTPUT_PATH}A3.png", True)
     print(f"The number of flowers in image A3 is {count_flowers(img)}")
+
+    mean_shift_and_its_friends(3, 50)
+    mean_shift_and_its_friends(3, 100)
+    mean_shift_and_its_friends(3, 150)
+    mean_shift_and_its_friends(2, 50)
+    mean_shift_and_its_friends(2, 100)
+    mean_shift_and_its_friends(2, 150)
+    mean_shift_and_its_friends(1, 50)
+    mean_shift_and_its_friends(1, 100)
+    mean_shift_and_its_friends(1, 150)
+    mean_shift_and_its_friends(4, 50)
+    mean_shift_and_its_friends(4, 100)
+    mean_shift_and_its_friends(4, 150)
+
+    n_cut_and_its_friends(3, 200)
+    n_cut_and_its_friends(3, 400)
+    n_cut_and_its_friends(3, 600)
+    n_cut_and_its_friends(2, 200)
+    n_cut_and_its_friends(2, 400)
+    n_cut_and_its_friends(2, 600)
+    n_cut_and_its_friends(1, 200)
+    n_cut_and_its_friends(1, 400)
+    n_cut_and_its_friends(1, 600)
+    n_cut_and_its_friends(4, 200)
+    n_cut_and_its_friends(4, 400)
+    n_cut_and_its_friends(4, 600)
