@@ -669,25 +669,28 @@ def count_flowers(img_func: np.ndarray) -> int:
 if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.makedirs(OUTPUT_PATH)
+    img = read_image(f"{INPUT_PATH}A1.png") # Read image
+    img = grayscale_image(down_sample_image(img, 16, 16)) # Down-sample and gray-scale the image
+    img = grayscale_morphological_operation(img, np.ones((50, 50)), "t") # Perform top hat operation
+    img = binarize_image(img, 100) # Binarize the image
+    img = close_image(open_image(img, 2), 2) # Filter out noise
+    write_image(add_rgb_channel(img), f"{OUTPUT_PATH}A1.png", True)
+    print(f"The number of flowers in image A1 is {count_flowers(img)}")
 
-    for model in (2, 3):
-        img = read_image(f"{INPUT_PATH}A{model}.png")
-        print("Started Down Sampling")
-        img = down_sample_image(img, 16, 16)
-        print("Finished Down Sampling")
-        img = grayscale_image(img)
-        for i in (25, 50, 75, 100, 150, 200):
-            print(f"Started morph for {i}")
-            img_new = grayscale_morphological_operation(img, np.ones((i, i)), "t")
-            print(f"Finished morph for {i}")
-            write_image(add_rgb_channel(img_new), f"{OUTPUT_PATH}A{model}_gray_{i}.png", True)
-            print(f"Binarizing Image for {i}")
-            img_new = binarize_image(img_new, 100)
-            write_image(add_rgb_channel(img_new), f"{OUTPUT_PATH}A{model}_gray_binary_{i}.png", True)
-            print(f"Cleaning Image for {i}")
-            if model == 2:
-                img_new = down_sample_image(img_new, 2, 2, "binary")
-            for clean in (1, 2, 4, 6):
-                img_new_new = close_image(open_image(img_new, clean), clean)
-                write_image(add_rgb_channel(img_new_new), f"{OUTPUT_PATH}A{model}_gray_final_{i}_{clean}.png", True)
-                print(f"A{model}_{i}_{clean}_flower = {count_flowers(img_new_new)}")
+    img = read_image(f"{INPUT_PATH}A2.png") # Read image
+    img = grayscale_image(down_sample_image(img, 16, 16)) # Down-sample and gray-scale the image
+    img = grayscale_morphological_operation(img, np.ones((75, 75)), "t") # Perform top hat operation
+    img = binarize_image(img, 100) # Binarize the image
+    img = down_sample_image(img, 2, 2, "binary")
+    img = close_image(open_image(img, 2), 2) # Filter out noise
+    write_image(add_rgb_channel(img), f"{OUTPUT_PATH}A2.png", True)
+    print(f"The number of flowers in image A2 is {count_flowers(img)}")
+
+    img = read_image(f"{INPUT_PATH}A3.png") # Read image
+    img = grayscale_image(down_sample_image(img, 16, 16)) # Down-sample and gray-scale the image
+    img = grayscale_morphological_operation(img, np.ones((150, 150)), "t") # Perform top hat operation
+    img = binarize_image(img, 100) # Binarize the image
+    img = down_sample_image(img, 2, 2, "binary")
+    img = close_image(open_image(img, 4), 4) # Filter out noise
+    write_image(add_rgb_channel(img), f"{OUTPUT_PATH}A3.png", True)
+    print(f"The number of flowers in image A3 is {count_flowers(img)}")
